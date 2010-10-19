@@ -62,6 +62,7 @@ private [redis] trait Reply {
 
   val singleLineReply: PartialFunction[(Char, String), Option[String]] = {
     case (SINGLE, s) => Some(s)
+    case (INT, s) => Some(s)
   }
 
   val bulkReply: PartialFunction[(Char, String), Option[String]] = {
@@ -83,7 +84,7 @@ private [redis] trait Reply {
         case n => 
           var l = List[Option[String]]()
           (1 to n).foreach {i =>
-            l = l ::: List(receive(bulkReply))
+            l = l ::: List(receive(bulkReply orElse singleLineReply))
           }
           Some(l)
       }
