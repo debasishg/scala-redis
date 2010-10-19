@@ -81,12 +81,7 @@ private [redis] trait Reply {
     case (MULTI, str) =>
       Integer.parseInt(str) match {
         case -1 => None
-        case n => 
-          var l = List[Option[String]]()
-          (1 to n).foreach {i =>
-            l = l ::: List(receive(bulkReply orElse singleLineReply))
-          }
-          Some(l)
+        case n => Some(List.fill(n)(receive(bulkReply orElse singleLineReply)))
       }
   }
 
