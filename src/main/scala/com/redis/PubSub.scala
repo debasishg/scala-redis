@@ -34,14 +34,18 @@ trait PubSub { self: Redis =>
         asList match {
           case Some(Some(msgType) :: Some(channel) :: Some(data) :: Nil) =>
             msgType match {
-              case "subscribe" => fn(S(channel, data.toInt))
+              case "subscribe" | "psubscribe" => fn(S(channel, data.toInt))
               case "unsubscribe" if (data.toInt == 0) => 
                 println("for break")
                 fn(U(channel, data.toInt))
                 break
-              case "unsubscribe" => 
+              case "punsubscribe" if (data.toInt == 0) => 
+                println("for break")
                 fn(U(channel, data.toInt))
-              case "message" => 
+                break
+              case "unsubscribe" | "punsubscribe" => 
+                fn(U(channel, data.toInt))
+              case "message" | "pmessage" => 
                 fn(M(channel, data))
               case x => throw new RuntimeException("unhandled message: " + x)
             }
@@ -51,6 +55,27 @@ trait PubSub { self: Redis =>
     }
   }
 
+  def pSubscribe(channel: String, channels: String*)(fn: PubSubMessage => Any) {
+    if (pubSub == true) { // already pubsub ing
+      pSubscribeRaw(channel, channels: _*)
+      return
+    }
+    pubSub = true
+    pSubscribeRaw(channel, channels: _*)
+    new Consumer(fn).start
+  }
+
+  def pSubscribeRaw(channel: String, channels: String*) {
+    send("PSUBSCRIBE", channel, channels: _*)
+  }
+
+  def pUnsubscribe = {
+    send("PUNSUBSCRIBE")
+  }
+
+  def pUnsubscribe(channel: String, channels: String*) = {
+    send("PUNSUBSCRIBE", channel, channels: _*)
+  }
   def subscribe(channel: String, channels: String*)(fn: PubSubMessage => Any) {
     if (pubSub == true) { // already pubsub ing
       subscribeRaw(channel, channels: _*)

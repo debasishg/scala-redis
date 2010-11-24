@@ -18,7 +18,7 @@ class RedisClientProject(info: ProjectInfo) extends DefaultProject(info)
         "org.scalatest" % "scalatest" % "1.2-for-scala-2.8.0.RC3-SNAPSHOT" % "test"
       case "2.8.0.RC7" =>
         "org.scalatest" % "scalatest" % "1.2-for-scala-2.8.0.RC6-SNAPSHOT" % "test"
-      case "2.8.0" =>
+      case "2.8.0" | "2.8.1" =>
         "org.scalatest" % "scalatest" % "1.2-for-scala-2.8.0.final-SNAPSHOT" % "test"
     }
   val junit = "junit" % "junit" % "4.8.1"
@@ -32,5 +32,5 @@ class RedisClientProject(info: ProjectInfo) extends DefaultProject(info)
 
   override def managedStyle = ManagedStyle.Maven
   Credentials(Path.userHome / ".ivy2" / ".credentials", log)
-  lazy val publishTo = "Scala Tools Nexus" at "http://nexus.scala-tools.org/content/repositories/releases/"
+  lazy val publishTo = "Scala Tools Nexus" at "http://maven/content/repositories/thirdparty/"
 }
