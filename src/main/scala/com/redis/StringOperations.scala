@@ -34,6 +34,13 @@ trait StringOperations { self: Redis =>
 
   @deprecated("use setnx") def setUnlessExists(key: String, value: String) = setnx(key, value)
 
+  // SETEX (key, time, value)
+  // atomically sets the value for the specified key and expire time (in sec.)
+  def setex(key: String, expiry: Int, value: String) : Boolean = {
+    send("SETEX", key, String.valueOf(expiry), value)
+    asBoolean
+  }
+
   // INCR (key)
   // increments the specified key by 1
   def incr(key: String): Option[Int] = {

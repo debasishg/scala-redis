@@ -76,6 +76,23 @@ class StringOperationsSpec extends Spec
     }
   }
 
+  describe("setex") {
+    it("should set values with expiry") {
+      val key = "setex-1"
+      val value = "value"
+      r.setex(key, 1, value) should equal(true)
+      r.get(key) match {
+        case Some(s:String) => s should equal(value)
+        case None => fail("should return value")
+      }
+      Thread.sleep(2000)
+      r.get(key) match {
+        case Some(_) => fail("key-1 should have expired")
+        case None =>
+      }
+    }
+  }
+
   describe("incr") {
     it("should increment by 1 for a key that contains a number") {
       r.set("anshin-1", "10") should equal(true)
