@@ -73,4 +73,12 @@ class SerializationSpec extends Spec
     r.hmget("hash2", "field1", "field2") should be(Some(Map("field1" -> "VAL1", "field2" -> "VAL2")))
   }
 
+  it("should parse string as a bytearray with an implicit parser") {
+    val x = "debasish".getBytes("UTF-8")
+    r.set("key", x)
+    import Parse.Implicits.parseByteArray
+    val s = r.get[Array[Byte]]("key")
+    new String(s.get) should equal("debasish")
+    r.get[Array[Byte]]("keey") should equal(None)
+  }
 }
