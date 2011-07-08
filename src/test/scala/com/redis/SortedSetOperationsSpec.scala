@@ -97,4 +97,12 @@ class SortedSetOperationsSpec extends Spec
       zrangeWithScore("hackers weighted").get.map(_._2.toInt) should equal(List(1953, 1965, 3832, 3938, 5820, 7648))
     }
   }
+  
+  describe("zcount") {
+    it ("should return the number of elements between min and max") {
+      add
+      
+      zcount("hackers", 1912, 1920) should equal(Some(2))
+    }
+  }
 }
