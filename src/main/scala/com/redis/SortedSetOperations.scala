@@ -47,8 +47,19 @@ trait SortedSetOperations { self: Redis =>
                        minInclusive: Boolean = true,
                        max: Double = Double.PositiveInfinity,
                        maxInclusive: Boolean = true,
-                       limit: Option[(Int, Int)])(implicit format: Format, parse: Parse[A]): Option[List[A]] =
-    send("ZRANGEBYSCORE", key :: Format.formatDouble(min, minInclusive) :: Format.formatDouble(max, maxInclusive) :: limit.toList.flatMap(l => List(l._1, l._2)))(asList.map(_.flatten))
+                       limit: Option[(Int, Int)])(implicit format: Format, parse: Parse[A]): Option[List[A]] = {
+
+      val limitEntries = if(!limit.isEmpty) { 
+        "LIMIT" :: limit.toList.flatMap(l => List(l._1, l._2))
+      } else { 
+        List()
+      }
+      send("ZRANGEBYSCORE", key :: 
+        Format.formatDouble(min, minInclusive) :: 
+        Format.formatDouble(max, maxInclusive) ::
+        limitEntries
+      )(asList.map(_.flatten))
+   }
 
   // ZRANK
   // ZREVRANK
