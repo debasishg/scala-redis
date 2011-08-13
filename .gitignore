@@ -1,6 +1,3 @@
 .DS_Store
-lib_managed
-project/boot
 target
-target/
-target/**/*
+project/boot
