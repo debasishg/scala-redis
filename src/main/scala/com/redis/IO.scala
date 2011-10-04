@@ -85,6 +85,9 @@ trait IO extends Log {
     var build = new scala.collection.mutable.ArrayBuilder.ofByte
     while (delimiter != Nil) {
       val next = in.read
+      if (next < 0) {
+        return null
+      }
       if (next == delimiter.head) {
         found ::= delimiter.head
         delimiter = delimiter.tail

@@ -99,8 +99,10 @@ private [redis] trait Reply {
   }
 
   def receive[T](pf: Reply[T]): T = readLine match {
-    case null =>
+    case null => {
+      reconnect
       throw new RedisConnectionException("Connection dropped ..")
+    }
     case line =>
       (pf orElse errReply) apply ((line(0).toChar,line.slice(1,line.length)))
   }
