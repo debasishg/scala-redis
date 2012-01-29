@@ -36,11 +36,9 @@ trait PubSub { self: Redis =>
             msgType match {
               case "subscribe" | "psubscribe" => fn(S(channel, data.toInt))
               case "unsubscribe" if (data.toInt == 0) => 
-                println("for break")
                 fn(U(channel, data.toInt))
                 break
               case "punsubscribe" if (data.toInt == 0) => 
-                println("for break")
                 fn(U(channel, data.toInt))
                 break
               case "unsubscribe" | "punsubscribe" => 
