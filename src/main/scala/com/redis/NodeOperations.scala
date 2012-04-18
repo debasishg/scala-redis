@@ -47,7 +47,7 @@ trait NodeOperations { self: Redis =>
     case _ => setAsMaster
   }
   
-  @deprecated("use slaveof") def slaveOf(options: Any): Boolean = slaveof(options)
+  @deprecated("use slaveof", "2010-03-31") def slaveOf(options: Any): Boolean = slaveof(options)
 
   private def setAsMaster: Boolean =
     send("SLAVEOF NO ONE")(asBoolean)
