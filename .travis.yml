@@ -1,0 +1,16 @@
+language: scala
+scala:
+# For instance: Build against 2 different versions of Scala 2.9.x 
+  - 2.9.2
+  - 2.9.1
+#  - 2.9.0-1
+#  - 2.9.0
+# Note: Compilation of 2.8.x are failing, hence disabled 
+#  - 2.8.2
+#  - 2.8.1
+#  - 2.8.0
+notifications:
+# Email notifications are disabled to not annoy anybody.
+# See http://about.travis-ci.org/docs/user/build-configuration/ to learn more
+# about configuring notification recipients and more (e.g. IRC notifications).
+  email: false

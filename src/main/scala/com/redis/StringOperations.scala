@@ -8,6 +8,11 @@ trait StringOperations { self: Redis =>
   // sets the key with the specified value.
   def set(key: Any, value: Any)(implicit format: Format): Boolean =
     send("SET", List(key, value))(asBoolean)
+    
+  // SET EXPIRE (key, ttl)
+  // sets the ttl for the key.
+  def expire(key: Any, ttl: Any)(implicit format: Format): Boolean =
+    send("EXPIRE", List(key,ttl))(asBoolean)
 
   // GET (key)
   // gets the value for the specified key.
