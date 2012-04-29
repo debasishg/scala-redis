@@ -175,7 +175,7 @@ class ListOperationsSpec extends Spec
       r.lpush("list-1", "5") should equal(Some(2))
       r.lpush("list-1", "4") should equal(Some(3))
       val thrown = evaluating { r.lset("list-1", 12, "30") } should produce [Exception]
-      thrown.getMessage should equal("ERR index out of range")
+      thrown.getMessage should equal("ERR no such key")
     }
   }
 
@@ -293,6 +293,58 @@ class ListOperationsSpec extends Spec
       r.lpush("list-1", "bar\nfoo\nbaz") should equal(Some(2))
       r.lpop("list-1") should equal(Some("bar\nfoo\nbaz"))
       r.lpop("list-1") should equal(Some("foo\nbar\nbaz"))
+    }
+  }
+
+  describe("brpoplpush") {
+    it("should do") {
+      r.rpush("list-1", "a") should equal(Some(1))
+      r.rpush("list-1", "b") should equal(Some(2))
+      r.rpush("list-1", "c") should equal(Some(3))
+
+      r.rpush("list-2", "foo") should equal(Some(1))
+      r.rpush("list-2", "bar") should equal(Some(2))
+      r.brpoplpush("list-1", "list-2", 2) should equal(Some("c"))
+      r.lindex("list-2", 0) should equal(Some("c"))
+      r.llen("list-1") should equal(Some(2))
+      r.llen("list-2") should equal(Some(3))
+    }
+
+    it("should rotate the list when src and dest are the same") {
+      r.rpush("list-1", "a") should equal(Some(1))
+      r.rpush("list-1", "b") should equal(Some(2))
+      r.rpush("list-1", "c") should equal(Some(3))
+      r.brpoplpush("list-1", "list-1", 2) should equal(Some("c"))
+      r.lindex("list-1", 0) should equal(Some("c"))
+      r.lindex("list-1", 2) should equal(Some("b"))
+      r.llen("list-1") should equal(Some(3))
+    }
+
+    it("should time out and give None for non-existent key") {
+      r.brpoplpush("test-1", "test-2", 2) should equal(None)
+      r.rpush("test-1", "a") should equal(Some(1))
+      r.rpush("test-1", "b") should equal(Some(2))
+      r.brpoplpush("test-1", "test-2", 2) should equal(Some("b"))
+    }
+
+    it("should pop blockingly") {
+      val r1 = new RedisClient("localhost", 6379)
+      class Foo extends Runnable {
+        def start () {
+          val myThread = new Thread(this) ;
+          myThread.start() ;
+        }
+
+        def run {
+          r.brpoplpush("l1", "l2", 3) should equal(Some("a"))
+          r1.disconnect
+          r.lpop("l2") should equal(Some("a"))
+        }
+      }
+      (new Foo).start
+      r1.llen("l1").get should equal(0)
+      r1.lpush("l1", "a")
+      Thread.sleep(5000) // to prevent flushdb
     }
   }
 

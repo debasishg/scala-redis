@@ -63,6 +63,9 @@ trait ListOperations { self: Redis =>
   def rpoplpush[A](srcKey: Any, dstKey: Any)(implicit format: Format, parse: Parse[A]): Option[A] =
     send("RPOPLPUSH", List(srcKey, dstKey))(asBulk)
 
+  def brpoplpush[A](srcKey: Any, dstKey: Any, timeoutInSeconds: Int)(implicit format: Format, parse: Parse[A]): Option[A] =
+    send("BRPOPLPUSH", List(srcKey, dstKey, timeoutInSeconds))(asBulkWithTime)
+
   def blpop[K,V](timeoutInSeconds: Int, key: K, keys: K*)(implicit format: Format, parseK: Parse[K], parseV: Parse[V]): Option[(K,V)] =
     send("BLPOP", key :: keys.foldRight(List[Any](timeoutInSeconds))(_ :: _))(asListPairs[K,V].flatMap(_.flatten.headOption))
 
