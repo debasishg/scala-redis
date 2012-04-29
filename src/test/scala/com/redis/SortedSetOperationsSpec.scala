@@ -144,4 +144,13 @@ class SortedSetOperationsSpec extends Spec
       zcount("hackers", 1912, 1920) should equal(Some(2))
     }
   }
+
+  describe("zrangebyscore") {
+    it ("should do a zrangebyscore (with scores)") {
+      add
+      zrangebyscore("hackers", 1940, true, 1960, true, None).get should equal (List ("alan kay", "richard stallman"))
+
+      zrangebyscoreWithScore("hackers", 1940, true, 1960, true, None).get should equal (List ( ("alan kay", 1940), ("richard stallman", 1953) ))
+    }
+  } 
 }

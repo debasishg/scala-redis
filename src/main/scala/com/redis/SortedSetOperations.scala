@@ -61,6 +61,15 @@ trait SortedSetOperations { self: Redis =>
       )(asList.map(_.flatten))
    }
 
+  def zrangebyscoreWithScore[A](key: Any,
+                       min: Double = Double.NegativeInfinity,
+                       minInclusive: Boolean = true,
+                       max: Double = Double.PositiveInfinity,
+                       maxInclusive: Boolean = true,
+                       limit: Option[(Int, Int)])(implicit format: Format, parse: Parse[A]): Option[List[(A, Double)]] =
+    send("ZRANGEBYSCORE", key :: Format.formatDouble(min, minInclusive) :: Format.formatDouble(max, maxInclusive) :: "WITHSCORES" :: limit.toList.flatMap(l => List(l._1, l._2)))(asListPairs(parse, Parse.Implicits.parseDouble).map(_.flatten))
+
+
   // ZRANK
   // ZREVRANK
   //
