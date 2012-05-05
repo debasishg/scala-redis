@@ -6,6 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
+import com.redis.RedisClient.{DESC, SUM}
 
 
 @RunWith(classOf[JUnitRunner])
@@ -92,13 +93,13 @@ class SortedSetOperationsSpec extends Spec
       zadd("hackers 4", 1912, "alan turing") should equal(Some(1))
 
       // union with weight = 1
-      zunionstore("hackers", List("hackers 1", "hackers 2", "hackers 3", "hackers 4")) should equal(Some(6))
+      zunionstore("hackers", List("hackers 1", "hackers 2", "hackers 3", "hackers 4"), SUM) should equal(Some(6))
       zcard("hackers") should equal(Some(6))
 
       zrangeWithScore("hackers").get.map(_._2) should equal(List(1912, 1916, 1940, 1953, 1965, 1969))
 
       // union with modified weights
-      zunionstoreWeighted("hackers weighted", Map("hackers 1" -> 1.0, "hackers 2" -> 2.0, "hackers 3" -> 3.0, "hackers 4" -> 4.0)) should equal(Some(6))
+      zunionstoreWeighted("hackers weighted", Map("hackers 1" -> 1.0, "hackers 2" -> 2.0, "hackers 3" -> 3.0, "hackers 4" -> 4.0), SUM) should equal(Some(6))
       zrangeWithScore("hackers weighted").get.map(_._2.toInt) should equal(List(1953, 1965, 3832, 3938, 5820, 7648))
     }
   }
@@ -108,6 +109,40 @@ class SortedSetOperationsSpec extends Spec
       add
       
       zcount("hackers", 1912, 1920) should equal(Some(2))
+    }
+  }
+
+  describe("zrangebyscore") {
+    it ("should return the elements between min and max") {
+      add
+
+      zrangebyscore("hackers", 1940, true, 1969, true, None).get should equal(
+        List("alan kay", "richard stallman", "yukihiro matsumoto", "linus torvalds"))
+
+      zrangebyscore("hackers", 1940, true, 1969, true, None, DESC).get should equal(
+        List("linus torvalds", "yukihiro matsumoto", "richard stallman","alan kay"))
+    }
+
+    it("should return the elements between min and max and allow offset and limit") {
+      add
+
+      zrangebyscore("hackers", 1940, true, 1969, true, Some(0, 2)).get should equal(
+        List("alan kay", "richard stallman"))
+
+      zrangebyscore("hackers", 1940, true, 1969, true, Some(0, 2), DESC).get should equal(
+        List("linus torvalds", "yukihiro matsumoto"))
+
+      zrangebyscore("hackers", 1940, true, 1969, true, Some(3, 1)).get should equal (
+        List("linus torvalds"))
+
+      zrangebyscore("hackers", 1940, true, 1969, true, Some(3, 1), DESC).get should equal (
+        List("alan kay"))
+
+      zrangebyscore("hackers", 1940, false, 1969, true, Some(0, 2)).get should equal (
+        List("richard stallman", "yukihiro matsumoto"))
+
+      zrangebyscore("hackers", 1940, true, 1969, false, Some(0, 2), DESC).get should equal (
+        List("yukihiro matsumoto", "richard stallman"))
     }
   }
 }

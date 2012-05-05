@@ -232,8 +232,8 @@ abstract class RedisCluster(hosts: String*) extends RedisClient {
     nodeForKey(key).zrange[A](key, start, end, sortAs)
   override def zrangeWithScore[A](key: Any, start: Int = 0, end: Int = -1, sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]) =
     nodeForKey(key).zrangeWithScore[A](key, start, end, sortAs)
-  override def zrangebyscore[A](key: Any, min: Double = Double.NegativeInfinity, minInclusive: Boolean = true, max: Double = Double.PositiveInfinity, maxInclusive: Boolean = true, limit: Option[(Int, Int)])(implicit format: Format, parse: Parse[A]) =
-    nodeForKey(key).zrangebyscore[A](key, min, minInclusive, max, maxInclusive, limit)
+  override def zrangebyscore[A](key: Any, min: Double = Double.NegativeInfinity, minInclusive: Boolean = true, max: Double = Double.PositiveInfinity, maxInclusive: Boolean = true, limit: Option[(Int, Int)], sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]) =
+    nodeForKey(key).zrangebyscore[A](key, min, minInclusive, max, maxInclusive, limit, sortAs)
   override def zcount(key: Any, min: Double = Double.NegativeInfinity, max: Double = Double.PositiveInfinity, minInclusive: Boolean = true, maxInclusive: Boolean = true)(implicit format: Format): Option[Int] =
     nodeForKey(key).zcount(key, min, max, minInclusive, maxInclusive)
 
