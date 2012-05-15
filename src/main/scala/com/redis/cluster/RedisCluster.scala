@@ -124,7 +124,7 @@ abstract class RedisCluster(hosts: String*) extends RedisClient {
 
   override def lastsave = throw new UnsupportedOperationException("not supported on a cluster")
   override def monitor = throw new UnsupportedOperationException("not supported on a cluster")
-  override def info = throw new UnsupportedOperationException("not supported on a cluster")
+  override def info(implicit parse: Parse[String]): Option[String] = throw new UnsupportedOperationException("not supported on a cluster")
   override def slaveof(options: Any) = throw new UnsupportedOperationException("not supported on a cluster")
   override def move(key: Any, db: Int)(implicit format: Format) = throw new UnsupportedOperationException("not supported on a cluster")
   override def auth(secret: Any)(implicit format: Format) = throw new UnsupportedOperationException("not supported on a cluster")

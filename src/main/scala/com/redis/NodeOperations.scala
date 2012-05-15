@@ -30,8 +30,8 @@ trait NodeOperations { self: Redis =>
 
   // INFO
   // the info command returns different information and statistics about the server.
-  def info =
-    send("INFO")(asString)
+  def info(implicit parse: Parse[String]): Option[String] =
+    send("INFO")(asBulk[String])
   
   // MONITOR
   // is a debugging command that outputs the whole sequence of commands received by the Redis server.
