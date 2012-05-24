@@ -20,7 +20,9 @@ object ScalaRedisProject extends Build
       "org.slf4j"      % "slf4j-log4j12" % "1.6.1"  % "provided",
       "log4j"          % "log4j"         % "1.2.16" % "provided",
       "junit"          % "junit"         % "4.8.1"  % "test",
-      "org.scalatest"  % "scalatest_2.9.1" % "1.6.1" % "test"),
+      "org.scalatest"  % "scalatest_2.9.1" % "1.6.1" % "test",
+      "com.twitter"    % "util"          % "1.11.4" % "test" intransitive(),
+      "com.twitter"    % "finagle-core"  % "1.9.0" % "test"),
 
     parallelExecution in Test := false,
     publishTo <<= version { (v: String) => 
