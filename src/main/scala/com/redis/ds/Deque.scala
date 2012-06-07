@@ -75,12 +75,15 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
 
 import com.redis.{Redis, ListOperations}
 
-class RedisDequeClient(val h: String, val p: Int) {
+class RedisDequeClient(val h: String, val p: Int, val ct: Int,val psw:Option[String]) {
+  def this( h:String,  p:Int) = this(h,p,1,None)
   def getDeque[A](k: String, blocking: Boolean = false, timeoutInSecs: Int = 0)(implicit format: Format, parse: Parse[A]) =
     new RedisDeque(blocking, timeoutInSecs)(format, parse) with ListOperations with Redis {
       val host = h
       val port = p
       val key = k
+      val connectionTimeout = ct*1000000L
+      val password = psw
       connect
     }
 }

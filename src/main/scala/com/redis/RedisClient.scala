@@ -38,12 +38,17 @@ trait RedisCommand extends Redis
   with HashOperations
   
 
-class RedisClient(override val host: String, override val port: Int)
+class RedisClient(override val host: String, override val port: Int, val connectionTimeoutSec : Int, override val password: Option[String])
   extends RedisCommand with PubSub {
 
   connect
 
+  val connectionTimeout = connectionTimeoutSec * 1000000000L    
+  def this(host:String,port:Int,pwd:Option[String]) = this(host,port,300,pwd)
+  def this(host:String,port:Int,cts:Int) = this(host,port,cts,None)
+  def this(host:String,port:Int) = this(host,port,300)
   def this() = this("localhost", 6379)
+
   override def toString = host + ":" + String.valueOf(port)
 
   def pipeline(f: PipelineClient => Any): Option[List[Any]] = {
@@ -79,6 +84,8 @@ class RedisClient(override val host: String, override val port: Int)
 
     val host = parent.host
     val port = parent.port
+    val connectionTimeout = parent.connectionTimeout
+    val password = parent.password
 
     // TODO: Find a better abstraction
     override def connected = parent.connected
@@ -88,6 +95,6 @@ class RedisClient(override val host: String, override val port: Int)
     override def clearFd = parent.clearFd
     override def write(data: Array[Byte]) = parent.write(data)
     override def readLine = parent.readLine
-    override def readCounted(count: Int) = parent.readCounted(count)
+    override def readCounted(count: Int) = parent.readCounted(count)    
   }
 }

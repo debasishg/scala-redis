@@ -8,11 +8,15 @@ import serialization.Parse.parseStringSafe
 trait IO extends Log {
   val host: String
   val port: Int
+  val connectionTimeout: Long
+  val password : Option[String] 
 
   var socket: Socket = _
   var out: OutputStream = _
   var in: InputStream = _
   var db: Int = _
+  var lastActivity : Long = System.nanoTime
+
 
   def connected = {
     socket != null
@@ -24,17 +28,27 @@ trait IO extends Log {
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {
     try {
-      socket = new Socket(host, port)
-      socket.setSoTimeout(0)
-      socket.setKeepAlive(true)
-      socket.setTcpNoDelay(true)
+      socket = new Socket( host, port )
+      socket.setSoTimeout( 0 )
+      socket.setKeepAlive( true )
+      socket.setTcpNoDelay( true )
       out = socket.getOutputStream
-      in = new BufferedInputStream(socket.getInputStream)
+      in = new BufferedInputStream( socket.getInputStream )
+      
+      password.foreach{ pw =>
+        val data = Commands.multiBulk("AUTH".getBytes("UTF-8") +: List(pw.getBytes("UTF-8")))
+        out.write(data)
+        out.flush
+        readLine
+      }
+
+
+      lastActivity = System.nanoTime      
       true
     } catch {
       case x =>
         clearFd
-        throw new RuntimeException(x)
+        throw new RuntimeException( x )
     }
   }
 
@@ -59,41 +73,46 @@ trait IO extends Log {
   }
 
   // Wrapper for the socket write operation.
-  def write_to_socket(data: Array[Byte])(op: OutputStream => Unit) = op(out)
+  def write_to_socket( data: Array[Byte] )( op: OutputStream => Unit ) = op( out )
 
   // Writes data to a socket using the specified block.
-  def write(data: Array[Byte]) = {
-    ifDebug("C: " + parseStringSafe(data))
-    if (!connected) connect;
-    write_to_socket(data){ os =>
-      try {
-        os.write(data)
-        os.flush
-      } catch {
-        case x => reconnect;
+  def write( data: Array[Byte] ) = {
+    ifDebug( "C: "+parseStringSafe( data ) )
+    if ( !connected ) {connect;}
+    if ( ( System.nanoTime - lastActivity ) > connectionTimeout ) {reconnect}
+    lastActivity = System.nanoTime
+
+    try {
+      out.write( data )
+      out.flush
+    } catch {
+      case x => {
+        reconnect;
+        out.write( data )
+        out.flush
       }
     }
   }
 
-  private val crlf = List(13,10)
+  private val crlf = List( 13, 10 )
 
-  def readLine: Array[Byte] = {
-    if(!connected) connect
+  def readLine: Array[Byte] = {    
+    if ( !connected ) {connect}
     var delimiter = crlf
     var found: List[Int] = Nil
     var build = new scala.collection.mutable.ArrayBuilder.ofByte
-    while (delimiter != Nil) {
+    while ( delimiter != Nil ) {
       val next = try {
         in.read
-      } catch {case e => -1}
-      if (next < 0) return null
-      if (next == delimiter.head) {
+      } catch { case e => -1 }
+      if ( next < 0 ) return null
+      if ( next == delimiter.head ) {
         found ::= delimiter.head
         delimiter = delimiter.tail
       } else {
-        if (found != Nil) {
+        if ( found != Nil ) {
           delimiter = crlf
-          build ++= found.reverseMap(_.toByte)
+          build ++= found.reverseMap( _.toByte )
           found = Nil
         }
         build += next.toByte
@@ -102,12 +121,12 @@ trait IO extends Log {
     build.result
   }
 
-  def readCounted(count: Int): Array[Byte] = {
-    if(!connected) connect
-    val arr = new Array[Byte](count)
+  def readCounted( count: Int ): Array[Byte] = {
+    if ( !connected ) connect
+    val arr = new Array[Byte]( count )
     var cur = 0
-    while (cur < count) {
-      cur += in.read(arr, cur, count - cur)
+    while ( cur < count ) {
+      cur += in.read( arr, cur, count - cur )
     }
     arr
   }
