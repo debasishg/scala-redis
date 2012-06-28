@@ -7,7 +7,7 @@ object ScalaRedisProject extends Build
 
   lazy val commonSettings: Seq[Setting[_]] = Seq(
     organization := "net.debasishg",
-    version := "2.5",
+    version := "2.5-inplaytime",
     scalaVersion := "2.9.1",
     scalacOptions ++= Seq("-deprecation", "-unchecked")
   )
@@ -26,9 +26,10 @@ object ScalaRedisProject extends Build
 
     parallelExecution in Test := false,
     publishTo <<= version { (v: String) => 
-      val nexus = "https://oss.sonatype.org/" 
-      if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
-      else Some("releases" at nexus + "service/local/staging/deploy/maven2") 
+    if (v.trim.endsWith("SNAPSHOT"))
+        Some(Resolver.file("file", new File(Path.userHome + "/Dev/GitHub/maven/snapshots")))
+    else
+        Some(Resolver.file("file", new File(Path.userHome + "/Dev/GitHub/maven/releases")))
     },
     credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
     publishMavenStyle := true,
