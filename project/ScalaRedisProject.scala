@@ -17,9 +17,9 @@ object ScalaRedisProject extends Build
   lazy val coreSettings = commonSettings ++ template ++ Seq(
     name := "RedisClient",
 
-    libraryDependencies ++= Seq("commons-pool" % "commons-pool" % "1.5.6",
-      "org.slf4j"      % "slf4j-api"     % "1.6.1",
-      "org.slf4j"      % "slf4j-log4j12" % "1.6.1"  % "provided",
+    libraryDependencies ++= Seq("commons-pool" % "commons-pool" % "1.6",
+      "org.slf4j"      % "slf4j-api"     % "1.6.6",
+      "org.slf4j"      % "slf4j-log4j12" % "1.6.6"  % "provided",
       "log4j"          % "log4j"         % "1.2.16" % "provided",
       "junit"          % "junit"         % "4.8.1"  % "test",
       "org.scalatest"  % "scalatest_2.9.1" % "1.6.1" % "test",
