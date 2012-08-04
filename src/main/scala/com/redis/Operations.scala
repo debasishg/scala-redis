@@ -3,10 +3,8 @@ package com.redis
 import serialization._
 
 trait Operations { self: Redis =>
-  // KEYS
-  // returns all the keys matching the glob-sty
   // SORT
-  // sort
+  // sort keys in a set, and optionally pull values for them
   def sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
     val commands:List[Any] =
       List(List(key), limit.map(l => List("LIMIT", l._1, l._2)).getOrElse(Nil)
@@ -61,11 +59,6 @@ trait Operations { self: Redis =>
   // sets the expire time (in sec.) for the specified key.
   def expire(key: Any, expiry: Int)(implicit format: Format): Boolean =
     send("EXPIRE", List(key, expiry))(asBoolean)
-
-  // TTL (key)
-  // returns the remaining time to live of a key that has a timeout
-  def ttl(key: Any)(implicit format: Format): Option[Int] =
-    send("TTL", List(key))(asInt)
 
   // SELECT (index)
   // selects the DB to connect, defaults to 0 (zero).

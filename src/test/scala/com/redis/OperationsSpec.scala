@@ -116,13 +116,11 @@ class OperationsSpec extends Spec
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
       r.expire("anshin-2", 1000) should equal(true)
-      r.ttl("anshin-2") should equal(Some(1000))
       r.expire("anshin-3", 1000) should equal(false)
     }
   }
   describe("sort") {
     it("should give") {
-// sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
       r.hset("hash-1", "description", "one")
       r.hset("hash-1", "order", "100")
       r.hset("hash-2", "description", "two")
