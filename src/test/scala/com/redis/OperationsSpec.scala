@@ -111,13 +111,32 @@ class OperationsSpec extends Spec
       r.getType("anshin-2").get should equal("string")
     }
   }
-
   describe("expire") {
     it("should give") {
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
       r.expire("anshin-2", 1000) should equal(true)
       r.expire("anshin-3", 1000) should equal(false)
+    }
+  }
+  describe("sort") {
+    it("should give") {
+// sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
+      r.hset("hash-1", "description", "one")
+      r.hset("hash-1", "order", "100")
+      r.hset("hash-2", "description", "two")
+      r.hset("hash-2", "order", "25")
+      r.hset("hash-3", "description", "three")
+      r.hset("hash-3", "order", "50")
+      r.sadd("alltest", 1)
+      r.sadd("alltest", 2)
+      r.sadd("alltest", 3)
+      r.sort("alltest").getOrElse(Nil) should equal(List(Some("1"), Some("2"), Some("3")))
+      r.sort("alltest", Some(Pair(0, 1))).getOrElse(Nil) should equal(List(Some("1")))
+      r.sort("alltest", None, true).getOrElse(Nil) should equal(List(Some("3"), Some("2"), Some("1")))
+      r.sort("alltest", None, false, false, Some("hash-*->order")).getOrElse(Nil) should equal(List(Some("2"), Some("3"), Some("1")))
+      r.sort("alltest", None, false, false, None, List("hash-*->description")).getOrElse(Nil) should equal(List(Some("one"), Some("two"), Some("three")))
+      r.sort("alltest", None, false, false, None, List("hash-*->description", "hash-*->order")).getOrElse(Nil) should equal(List(Some("one"), Some("100"), Some("two"), Some("25"), Some("three"), Some("50")))
     }
   }
 }

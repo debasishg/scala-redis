@@ -3,11 +3,20 @@ package com.redis
 import serialization._
 
 trait Operations { self: Redis =>
-
+  // KEYS
+  // returns all the keys matching the glob-sty
   // SORT
   // sort
-  def sort[A](key:Any, getKey:Any)(implicit format: Format, parse: Parse[A]): Option[List[Option[A]]] =
-    send("SORT", List(key, "BY", "nosort", "GET", getKey))(asList)
+  def sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
+    val commands:List[Any] =
+      List(List(key), limit.map(l => List("LIMIT", l._1, l._2)).getOrElse(Nil)
+      , (if (desc) List("DESC") else Nil)
+      , (if (alpha) List("ALPHA") else Nil)
+      , by.map(b => List("BY", b)).getOrElse(Nil)
+      , get.map(g => List("GET", g)).flatMap(x=>x)
+      ).flatMap(x=>x)
+    send("SORT", commands)(asList)
+  }
   // KEYS
   // returns all the keys matching the glob-style pattern.
   def keys[A](pattern: Any = "*")(implicit format: Format, parse: Parse[A]): Option[List[Option[A]]] =
