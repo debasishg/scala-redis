@@ -255,4 +255,17 @@ class StringOperationsSpec extends Spec
       r.getbit("mykey", 100) should equal(Some(0))
     }
   }
+
+/** uncomment to test timeout : need a custom redis.conf
+  describe("timeout") {
+    it("should append value to that of a key") {
+      r.set("mykey", "Hello World")
+      r.strlen("mykey") should equal(Some(11))
+      r.strlen("nonexisting") should equal(Some(0))
+      Thread.sleep(150000)
+      r.set("nonexisting", "Hello World")
+      r.strlen("nonexisting") should equal(Some(11))
+    }
+  }
+**/
 }

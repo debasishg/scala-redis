@@ -96,7 +96,7 @@ trait PubSub { self: Redis =>
     send("UNSUBSCRIBE", channel :: channels.toList)(())
   }
 
-  def publish(channel: String, msg: String) = {
-    send("PUBLISH", List(channel, msg))(())
+  def publish(channel: String, msg: String): Option[Int] = {
+    send("PUBLISH", List(channel, msg))(asInt)
   }
 }

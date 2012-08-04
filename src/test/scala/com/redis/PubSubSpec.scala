@@ -65,5 +65,21 @@ class PubSubSpec extends Spec
         }
       }
     }
+
+    it("should publish without breaking the other commands afterwards") {
+      t.set("key", "value")
+
+      t.get("key") match {
+        case Some(s: String) => s should equal("value")
+        case None => fail("should return value")
+      }
+
+      t.publish("a", "message")
+
+      t.get("key") match {
+        case Some(s: String) => s should equal("value")
+        case None => fail("should return value")
+      }
+    }
   }
 }

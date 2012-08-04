@@ -14,14 +14,25 @@ object RedisClient {
 }
 
 trait Redis extends IO with Protocol {
-  def send[A](command: String, args: Seq[Any])(result: => A)(implicit format: Format): A = {
+
+  def send[A](command: String, args: Seq[Any])(result: => A)(implicit format: Format): A = try {
     write(Commands.multiBulk(command.getBytes("UTF-8") +: (args map (format.apply))))
     result
+  } catch {
+    case e: RedisConnectionException =>
+      if (reconnect) send(command, args)(result)
+      else throw e
   }
-  def send[A](command: String)(result: => A): A = {
+
+  def send[A](command: String)(result: => A): A = try {
     write(Commands.multiBulk(List(command.getBytes("UTF-8"))))
     result
+  } catch {
+    case e: RedisConnectionException =>
+      if (reconnect) send(command)(result)
+      else throw e
   }
+
   def cmd(args: Seq[Array[Byte]]) = Commands.multiBulk(args)
 
   protected def flattenPairs(in: Iterable[Product2[Any, Any]]): List[Any] =
@@ -36,6 +47,7 @@ trait RedisCommand extends Redis
   with SetOperations
   with SortedSetOperations
   with HashOperations
+  with EvalOperations
   
 
 class RedisClient(override val host: String, override val port: Int)

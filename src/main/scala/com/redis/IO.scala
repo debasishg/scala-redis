@@ -1,7 +1,7 @@
 package com.redis
 
 import java.io._
-import java.net.Socket
+import java.net.{Socket, InetSocketAddress}
 
 import serialization.Parse.parseStringSafe
 
@@ -15,7 +15,7 @@ trait IO extends Log {
   var db: Int = _
 
   def connected = {
-    socket != null
+    socket != null && socket.isBound() && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown();
   }
   def reconnect = {
     disconnect && connect
@@ -25,9 +25,11 @@ trait IO extends Log {
   def connect: Boolean = {
     try {
       socket = new Socket(host, port)
+
       socket.setSoTimeout(0)
       socket.setKeepAlive(true)
       socket.setTcpNoDelay(true)
+
       out = socket.getOutputStream
       in = new BufferedInputStream(socket.getInputStream)
       true
@@ -83,9 +85,7 @@ trait IO extends Log {
     var found: List[Int] = Nil
     var build = new scala.collection.mutable.ArrayBuilder.ofByte
     while (delimiter != Nil) {
-      val next = try {
-        in.read
-      } catch {case e => -1}
+      val next = in.read
       if (next < 0) return null
       if (next == delimiter.head) {
         found ::= delimiter.head

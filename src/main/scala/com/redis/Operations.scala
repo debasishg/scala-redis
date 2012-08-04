@@ -62,6 +62,11 @@ trait Operations { self: Redis =>
   def expire(key: Any, expiry: Int)(implicit format: Format): Boolean =
     send("EXPIRE", List(key, expiry))(asBoolean)
 
+  // TTL (key)
+  // returns the remaining time to live of a key that has a timeout
+  def ttl(key: Any)(implicit format: Format): Option[Int] =
+    send("TTL", List(key))(asInt)
+
   // SELECT (index)
   // selects the DB to connect, defaults to 0 (zero).
   def select(index: Int): Boolean =
