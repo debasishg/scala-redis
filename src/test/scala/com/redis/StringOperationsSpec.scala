@@ -256,6 +256,41 @@ class StringOperationsSpec extends Spec
     }
   }
 
+  describe("bitcount") {
+    it("should do a population count") {
+      r.setbit("mykey", 7, 1)
+      r.bitcount("mykey") should equal(Some(1))
+      r.setbit("mykey", 8, 1)
+      r.bitcount("mykey") should equal(Some(2))
+    }
+  }
+
+  describe("bitop") {
+    it("should apply logical operators to the srckeys and store the results in destKey") {
+      // key1: 101
+      // key2:  10
+      r.setbit("key1", 0, 1)
+      r.setbit("key1", 2, 1)
+      r.setbit("key2", 1, 1)
+      r.bitop("AND", "destKey", "key1", "key2") should equal(Some(1))
+      // 101 AND 010 = 000
+      (0 to 2).foreach { bit =>
+        r.getbit("destKey", bit) should equal(Some(0))        
+      }
+
+      r.bitop("OR", "destKey", "key1", "key2") should equal(Some(1))
+      // 101 OR 010 = 111
+      (0 to 2).foreach { bit =>
+        r.getbit("destKey", bit) should equal(Some(1))        
+      }
+
+      r.bitop("NOT", "destKey", "key1") should equal(Some(1))
+      r.getbit("destKey", 0) should equal(Some(0))
+      r.getbit("destKey", 1) should equal(Some(1))
+      r.getbit("destKey", 2) should equal(Some(0))
+    }
+  }
+
 /** uncomment to test timeout : need a custom redis.conf
   describe("timeout") {
     it("should append value to that of a key") {
