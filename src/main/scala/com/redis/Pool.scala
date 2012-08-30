@@ -21,8 +21,8 @@ private [redis] class RedisClientFactory(host: String, port: Int) extends Poolab
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(host: String, port: Int) {
-  val pool = new StackObjectPool(new RedisClientFactory(host, port))
+class RedisClientPool(host: String, port: Int, maxIdle: Int = 8) {
+  val pool = new StackObjectPool(new RedisClientFactory(host, port), maxIdle)
   override def toString = host + ":" + String.valueOf(port)
 
   def withClient[T](body: RedisClient => T) = {
