@@ -3,9 +3,14 @@ package com.redis
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 
-private [redis] class RedisClientFactory(host: String, port: Int) extends PoolableObjectFactory[RedisClient] {
+private [redis] class RedisClientFactory(host: String, port: Int, database: Int = 0) extends PoolableObjectFactory[RedisClient] {
   // when we make an object it's already connected
-  def makeObject = new RedisClient(host, port) 
+  def makeObject = {
+    val cl = new RedisClient(host, port)
+    if (database != 0)
+      cl.select(database)
+    cl
+  }
 
   // quit & disconnect
   def destroyObject(rc: RedisClient): Unit = {
@@ -21,8 +26,8 @@ private [redis] class RedisClientFactory(host: String, port: Int) extends Poolab
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(host: String, port: Int, maxIdle: Int = 8) {
-  val pool = new StackObjectPool(new RedisClientFactory(host, port), maxIdle)
+class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int = 0) {
+  val pool = new StackObjectPool(new RedisClientFactory(host, port, database), maxIdle)
   override def toString = host + ":" + String.valueOf(port)
 
   def withClient[T](body: RedisClient => T) = {
