@@ -37,8 +37,8 @@ trait Operations { self: Redis =>
   
   // DBSIZE
   // return the size of the db.
-  def dbsize: Option[Int] =
-    send("DBSIZE")(asInt)
+  def dbsize: Option[Long] =
+    send("DBSIZE")(asLong)
 
   // EXISTS (key)
   // test if the specified key exists.
@@ -47,8 +47,8 @@ trait Operations { self: Redis =>
 
   // DELETE (key1 key2 ..)
   // deletes the specified keys.
-  def del(key: Any, keys: Any*)(implicit format: Format): Option[Int] =
-    send("DEL", key :: keys.toList)(asInt)
+  def del(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("DEL", key :: keys.toList)(asLong)
 
   // TYPE (key)
   // return the type of the value stored at key in form of a string.
@@ -62,8 +62,8 @@ trait Operations { self: Redis =>
 
   // TTL (key)
   // returns the remaining time to live of a key that has a timeout
-  def ttl(key: Any)(implicit format: Format): Option[Int] =
-    send("TTL", List(key))(asInt)
+  def ttl(key: Any)(implicit format: Format): Option[Long] =
+    send("TTL", List(key))(asLong)
 
   // SELECT (index)
   // selects the DB to connect, defaults to 0 (zero).

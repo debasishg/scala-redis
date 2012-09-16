@@ -2,10 +2,10 @@ package com.redis.ds
 
 trait Deque[A] {
   // inserts at the head
-  def addFirst(a: A): Option[Int]
+  def addFirst(a: A): Option[Long]
 
   // inserts at the tail 
-  def addLast(a: A): Option[Int]
+  def addLast(a: A): Option[Long]
 
   // clears the deque
   def clear: Boolean
@@ -29,7 +29,7 @@ trait Deque[A] {
   def pollLast: Option[A]
 
   // size of the deque
-  def size: Int
+  def size: Long
 }
 
 import com.redis.ListOperations
@@ -41,8 +41,8 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
 
   val key: String
 
-  def addFirst(a: A): Option[Int] = lpush(key, a) 
-  def addLast(a: A): Option[Int] = rpush(key, a)
+  def addFirst(a: A): Option[Long] = lpush(key, a) 
+  def addLast(a: A): Option[Long] = rpush(key, a)
 
   def peekFirst: Option[A] = lrange[A](key, 0, 0).map(_.head.get) 
 
@@ -60,7 +60,7 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
       brpop[String, A](timeoutInSecs, key).map(_._2)
     } else rpop[A](key) 
 
-  def size: Int = llen(key) getOrElse(0)
+  def size: Long = llen(key) getOrElse(0l)
 
   def isEmpty: Boolean = size == 0
 

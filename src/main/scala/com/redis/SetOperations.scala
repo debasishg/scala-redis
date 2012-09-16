@@ -6,13 +6,13 @@ trait SetOperations { self: Redis =>
 
   // SADD (VARIADIC: >= 2.4)
   // Add the specified members to the set value stored at key.
-  def sadd(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Int] =
-    send("SADD", List(key, value) ::: values.toList)(asInt)
+  def sadd(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
+    send("SADD", List(key, value) ::: values.toList)(asLong)
 
   // SREM (VARIADIC: >= 2.4)
   // Remove the specified members from the set value stored at key.
-  def srem(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Int] =
-    send("SREM", List(key, value) ::: values.toList)(asInt)
+  def srem(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
+    send("SREM", List(key, value) ::: values.toList)(asLong)
 
   // SPOP
   // Remove and return (pop) a random element from the Set value at key.
@@ -21,13 +21,13 @@ trait SetOperations { self: Redis =>
 
   // SMOVE
   // Move the specified member from one Set to another atomically.
-  def smove(sourceKey: Any, destKey: Any, value: Any)(implicit format: Format): Option[Int] =
-    send("SMOVE", List(sourceKey, destKey, value))(asInt)
+  def smove(sourceKey: Any, destKey: Any, value: Any)(implicit format: Format): Option[Long] =
+    send("SMOVE", List(sourceKey, destKey, value))(asLong)
 
   // SCARD
   // Return the number of elements (the cardinality) of the Set at key.
-  def scard(key: Any)(implicit format: Format): Option[Int] =
-    send("SCARD", List(key))(asInt)
+  def scard(key: Any)(implicit format: Format): Option[Long] =
+    send("SCARD", List(key))(asLong)
 
   // SISMEMBER
   // Test if the specified value is a member of the Set at key.
@@ -44,8 +44,8 @@ trait SetOperations { self: Redis =>
   // and store the resulting Set at dstkey.
   // SINTERSTORE returns the size of the intersection, unlike what the documentation says
   // refer http://code.google.com/p/redis/issues/detail?id=121
-  def sinterstore(key: Any, keys: Any*)(implicit format: Format): Option[Int] =
-    send("SINTERSTORE", key :: keys.toList)(asInt)
+  def sinterstore(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("SINTERSTORE", key :: keys.toList)(asLong)
 
   // SUNION
   // Return the union between the Sets stored at key1, key2, ..., keyN.
@@ -57,8 +57,8 @@ trait SetOperations { self: Redis =>
   // and store the resulting Set at dstkey.
   // SUNIONSTORE returns the size of the union, unlike what the documentation says
   // refer http://code.google.com/p/redis/issues/detail?id=121
-  def sunionstore(key: Any, keys: Any*)(implicit format: Format): Option[Int] =
-    send("SUNIONSTORE", key :: keys.toList)(asInt)
+  def sunionstore(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("SUNIONSTORE", key :: keys.toList)(asLong)
 
   // SDIFF
   // Return the difference between the Set stored at key1 and all the Sets key2, ..., keyN.
@@ -68,8 +68,8 @@ trait SetOperations { self: Redis =>
   // SDIFFSTORE
   // Compute the difference between the Set key1 and all the Sets key2, ..., keyN, 
   // and store the resulting Set at dstkey.
-  def sdiffstore(key: Any, keys: Any*)(implicit format: Format): Option[Int] =
-    send("SDIFFSTORE", key :: keys.toList)(asInt)
+  def sdiffstore(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("SDIFFSTORE", key :: keys.toList)(asLong)
 
   // SMEMBERS
   // Return all the members of the Set value at key.

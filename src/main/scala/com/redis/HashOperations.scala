@@ -25,17 +25,17 @@ trait HashOperations { self: Redis =>
       }
     }
   
-  def hincrby(key: Any, field: Any, value: Int)(implicit format: Format): Option[Int] =
-    send("HINCRBY", List(key, field, value))(asInt)
+  def hincrby(key: Any, field: Any, value: Int)(implicit format: Format): Option[Long] =
+    send("HINCRBY", List(key, field, value))(asLong)
   
   def hexists(key: Any, field: Any)(implicit format: Format): Boolean =
     send("HEXISTS", List(key, field))(asBoolean)
   
-  def hdel(key: Any, field: Any, fields: Any*)(implicit format: Format): Option[Int] =
-    send("HDEL", List(key, field) ::: fields.toList)(asInt)
+  def hdel(key: Any, field: Any, fields: Any*)(implicit format: Format): Option[Long] =
+    send("HDEL", List(key, field) ::: fields.toList)(asLong)
   
-  def hlen(key: Any)(implicit format: Format): Option[Int] =
-    send("HLEN", List(key))(asInt)
+  def hlen(key: Any)(implicit format: Format): Option[Long] =
+    send("HLEN", List(key))(asLong)
   
   def hkeys[A](key: Any)(implicit format: Format, parse: Parse[A]): Option[List[A]] =
     send("HKEYS", List(key))(asList.map(_.flatten))

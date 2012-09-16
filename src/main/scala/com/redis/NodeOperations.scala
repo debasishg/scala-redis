@@ -16,8 +16,8 @@ trait NodeOperations { self: Redis =>
 
   // LASTSAVE
   // return the UNIX TIME of the last DB SAVE executed with success.
-  def lastsave: Option[Int] =
-    send("LASTSAVE")(asInt)
+  def lastsave: Option[Long] =
+    send("LASTSAVE")(asLong)
   
   // SHUTDOWN
   // Stop all the clients, save the DB, then quit the server.

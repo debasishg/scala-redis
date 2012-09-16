@@ -6,13 +6,13 @@ trait SortedSetOperations { self: Redis =>
   
   // ZADD (Variadic: >= 2.4)
   // Add the specified members having the specified score to the sorted set stored at key.
-  def zadd(key: Any, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Int] =
-    send("ZADD", List(key, score, member) ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asInt)
+  def zadd(key: Any, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Long] =
+    send("ZADD", List(key, score, member) ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asLong)
   
   // ZREM (Variadic: >= 2.4)
   // Remove the specified members from the sorted set value stored at key.
-  def zrem(key: Any, member: Any, members: Any*)(implicit format: Format): Option[Int] =
-    send("ZREM", List(key, member) ::: members.toList)(asInt)
+  def zrem(key: Any, member: Any, members: Any*)(implicit format: Format): Option[Long] =
+    send("ZREM", List(key, member) ::: members.toList)(asLong)
   
   // ZINCRBY
   // 
@@ -21,8 +21,8 @@ trait SortedSetOperations { self: Redis =>
   
   // ZCARD
   // 
-  def zcard(key: Any)(implicit format: Format): Option[Int] =
-    send("ZCARD", List(key))(asInt)
+  def zcard(key: Any)(implicit format: Format): Option[Long] =
+    send("ZCARD", List(key))(asLong)
   
   // ZSCORE
   // 
@@ -101,38 +101,38 @@ trait SortedSetOperations { self: Redis =>
   // ZRANK
   // ZREVRANK
   //
-  def zrank(key: Any, member: Any, reverse: Boolean = false)(implicit format: Format): Option[Int] =
-    send(if (reverse) "ZREVRANK" else "ZRANK", List(key, member))(asInt)
+  def zrank(key: Any, member: Any, reverse: Boolean = false)(implicit format: Format): Option[Long] =
+    send(if (reverse) "ZREVRANK" else "ZRANK", List(key, member))(asLong)
 
   // ZREMRANGEBYRANK
   //
-  def zremrangebyrank(key: Any, start: Int = 0, end: Int = -1)(implicit format: Format): Option[Int] =
-    send("ZREMRANGEBYRANK", List(key, start, end))(asInt)
+  def zremrangebyrank(key: Any, start: Int = 0, end: Int = -1)(implicit format: Format): Option[Long] =
+    send("ZREMRANGEBYRANK", List(key, start, end))(asLong)
 
   // ZREMRANGEBYSCORE
   //
-  def zremrangebyscore(key: Any, start: Double = Double.NegativeInfinity, end: Double = Double.PositiveInfinity)(implicit format: Format): Option[Int] =
-    send("ZREMRANGEBYSCORE", List(key, start, end))(asInt)
+  def zremrangebyscore(key: Any, start: Double = Double.NegativeInfinity, end: Double = Double.PositiveInfinity)(implicit format: Format): Option[Long] =
+    send("ZREMRANGEBYSCORE", List(key, start, end))(asLong)
 
   // ZUNION
   //
-  def zunionstore(dstKey: Any, keys: Iterable[Any], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
-    send("ZUNIONSTORE", (Iterator(dstKey, keys.size) ++ keys.iterator ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+  def zunionstore(dstKey: Any, keys: Iterable[Any], aggregate: Aggregate = SUM)(implicit format: Format): Option[Long] =
+    send("ZUNIONSTORE", (Iterator(dstKey, keys.size) ++ keys.iterator ++ Iterator("AGGREGATE", aggregate)).toList)(asLong)
 
-  def zunionstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
-    send("ZUNIONSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+  def zunionstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Long] =
+    send("ZUNIONSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asLong)
 
   // ZINTERSTORE
   //
-  def zinterstore(dstKey: Any, keys: Iterable[Any], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
-    send("ZINTERSTORE", (Iterator(dstKey, keys.size) ++ keys.iterator ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+  def zinterstore(dstKey: Any, keys: Iterable[Any], aggregate: Aggregate = SUM)(implicit format: Format): Option[Long] =
+    send("ZINTERSTORE", (Iterator(dstKey, keys.size) ++ keys.iterator ++ Iterator("AGGREGATE", aggregate)).toList)(asLong)
 
-  def zinterstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Int] =
-    send("ZINTERSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asInt)
+  def zinterstoreWeighted(dstKey: Any, kws: Iterable[Product2[Any,Double]], aggregate: Aggregate = SUM)(implicit format: Format): Option[Long] =
+    send("ZINTERSTORE", (Iterator(dstKey, kws.size) ++ kws.iterator.map(_._1) ++ Iterator.single("WEIGHTS") ++ kws.iterator.map(_._2) ++ Iterator("AGGREGATE", aggregate)).toList)(asLong)
 
   // ZCOUNT
   //
-  def zcount(key: Any, min: Double = Double.NegativeInfinity, max: Double = Double.PositiveInfinity, minInclusive: Boolean = true, maxInclusive: Boolean = true)(implicit format: Format): Option[Int] =
-    send("ZCOUNT", List(key, Format.formatDouble(min, minInclusive), Format.formatDouble(max, maxInclusive)))(asInt)
+  def zcount(key: Any, min: Double = Double.NegativeInfinity, max: Double = Double.PositiveInfinity, minInclusive: Boolean = true, maxInclusive: Boolean = true)(implicit format: Format): Option[Long] =
+    send("ZCOUNT", List(key, Format.formatDouble(min, minInclusive), Format.formatDouble(max, maxInclusive)))(asLong)
 
 }

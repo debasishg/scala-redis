@@ -50,6 +50,11 @@ private [redis] trait Reply {
     case (BULK, s) if Parsers.parseInt(s) == -1 => None
   }
 
+  val longReply: Reply[Option[Long]] = {
+  case (INT, s) => Some(Parsers.parseLong(s))
+  case (BULK, s) if Parsers.parseInt(s) == -1 => None
+    }
+
   val singleLineReply: SingleReply = {
     case (SINGLE, s) => Some(s)
     case (INT, s) => Some(s)
@@ -93,6 +98,10 @@ private [redis] trait Reply {
   def queuedReplyInt: Reply[Option[Int]] = {
     case (SINGLE, QUEUED) => Some(Int.MaxValue)
   }
+  
+  def queuedReplyLong: Reply[Option[Long]] = {
+    case (SINGLE, QUEUED) => Some(Long.MaxValue)
+    }
 
   def queuedReplyList: MultiReply = {
     case (SINGLE, QUEUED) => Some(List(Some(QUEUED)))
@@ -117,6 +126,7 @@ private [redis] trait R extends Reply {
   }
 
   def asInt: Option[Int] =  receive(integerReply orElse queuedReplyInt)
+  def asLong: Option[Long] =  receive(longReply orElse queuedReplyLong)
 
   def asBoolean: Boolean = receive(integerReply orElse singleLineReply) match {
     case Some(n: Int) => n > 0

@@ -6,20 +6,20 @@ trait ListOperations { self: Redis =>
 
   // LPUSH (Variadic: >= 2.4)
   // add values to the head of the list stored at key
-  def lpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Int] =
-    send("LPUSH", List(key, value) ::: values.toList)(asInt)
+  def lpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
+    send("LPUSH", List(key, value) ::: values.toList)(asLong)
 
   // RPUSH (Variadic: >= 2.4)
   // add value to the head of the list stored at key
-  def rpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Int] =
-    send("RPUSH", List(key, value) ::: values.toList)(asInt)
+  def rpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
+    send("RPUSH", List(key, value) ::: values.toList)(asLong)
 
   // LLEN
   // return the length of the list stored at the specified key.
   // If the key does not exist zero is returned (the same behaviour as for empty lists). 
   // If the value stored at key is not a list an error is returned.
-  def llen(key: Any)(implicit format: Format): Option[Int] =
-    send("LLEN", List(key))(asInt)
+  def llen(key: Any)(implicit format: Format): Option[Long] =
+    send("LLEN", List(key))(asLong)
 
   // LRANGE
   // return the specified elements of the list stored at the specified key.
@@ -45,8 +45,8 @@ trait ListOperations { self: Redis =>
 
   // LREM
   // Remove the first count occurrences of the value element from the list.
-  def lrem(key: Any, count: Int, value: Any)(implicit format: Format): Option[Int] =
-    send("LREM", List(key, count, value))(asInt)
+  def lrem(key: Any, count: Int, value: Any)(implicit format: Format): Option[Long] =
+    send("LREM", List(key, count, value))(asLong)
 
   // LPOP
   // atomically return and remove the first (LPOP) or last (RPOP) element of the list
