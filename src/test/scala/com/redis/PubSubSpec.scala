@@ -37,6 +37,7 @@ class PubSubSpec extends Spec
         pubsub match {
           case S(channel, no) => println("subscribed to " + channel + " and count = " + no)
           case U(channel, no) => println("unsubscribed from " + channel + " and count = " + no)
+          case E(exception) => println("Fatal error caused consumer dead. Please init new consumer reconnecting to master or connect to backup")
           case M(channel, msg) => 
             msg match {
               // exit will unsubscribe from all channels and stop subscription service

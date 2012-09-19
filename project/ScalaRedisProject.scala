@@ -8,11 +8,13 @@ object ScalaRedisProject extends Build
 
   lazy val commonSettings: Seq[Setting[_]] = Seq(
     organization := "net.debasishg",
-    version := "2.7",
+    version := "2.7-spaceape",
     scalaVersion := "2.9.2",
     scalacOptions ++= Seq("-deprecation", "-unchecked"),
     resolvers ++= Seq(twitterRepo)
   )
+
+  publishMavenStyle := true
 
   lazy val coreSettings = commonSettings ++ Seq(
     name := "RedisClient",
@@ -27,17 +29,15 @@ object ScalaRedisProject extends Build
       "com.twitter"    % "finagle-core_2.9.1"  % "4.0.2" % "test"),
 
     parallelExecution in Test := false,
-    publishTo <<= version { (v: String) => 
-      val nexus = "https://oss.sonatype.org/" 
-      if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
-      else Some("releases" at nexus + "service/local/staging/deploy/maven2") 
+    publishTo <<= version { (v: String) =>
+      Some("spaceape-publish" at "http://spaceapegames.artifactoryonline.com/spaceapegames/libs-releases-local/")
     },
     credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
     publishMavenStyle := true,
     publishArtifact in Test := false,
     pomIncludeRepository := { repo => false },
     pomExtra := (
-      <url>https://github.com/debasishg/scala-redis</url>
+      <url>https://github.com/spaceapegames/scala-redis.git</url>
       <licenses>
         <license>
           <name>Apache 2.0 License</name>
@@ -46,14 +46,14 @@ object ScalaRedisProject extends Build
         </license>
       </licenses>
       <scm>
-        <url>git@github.com:debasishg/scala-redis.git</url>
-        <connection>scm:git:git@github.com:debasishg/scala-redis.git</connection>
+        <url>git@github.com:spaceapegames/scala-redis.git</url>
+        <connection>scm:git:git@github.com:spaceapegames/scala-redis.git</connection>
       </scm>
       <developers>
         <developer>
-          <id>debasishg</id>
-          <name>Debasish Ghosh</name>
-          <url>http://debasishg.blogspot.com</url>
+          <id>spaceapegames</id>
+          <name>SpaceApe</name>
+          <url>http://www.spaceapegames.com</url>
         </developer>
       </developers>),
     unmanagedResources in Compile <+= baseDirectory map { _ / "LICENSE" }
@@ -61,5 +61,5 @@ object ScalaRedisProject extends Build
 }
 
 object Resolvers {
-  val twitterRepo = "release" at "http://maven.twttr.com"
+  val twitterRepo = "releases" at "http://spaceapegames.artifactoryonline.com/spaceapegames/libs-releases"
 }
