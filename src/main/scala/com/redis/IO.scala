@@ -72,7 +72,7 @@ trait IO extends Log {
         os.write(data)
         os.flush
       } catch {
-        case x => reconnect;
+        case x => throw new RedisConnectionException("connection is closed. write error")
       }
     }
   }

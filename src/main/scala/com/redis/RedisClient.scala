@@ -1,6 +1,7 @@
 package com.redis
 
 import serialization.Format
+import java.net.SocketException
 
 object RedisClient {
   trait SortOrder
@@ -22,6 +23,9 @@ trait Redis extends IO with Protocol {
     case e: RedisConnectionException =>
       if (reconnect) send(command, args)(result)
       else throw e
+    case e: SocketException =>
+      if (reconnect) send(command, args)(result)
+      else throw e
   }
 
   def send[A](command: String)(result: => A): A = try {
@@ -29,6 +33,9 @@ trait Redis extends IO with Protocol {
     result
   } catch {
     case e: RedisConnectionException =>
+      if (reconnect) send(command)(result)
+      else throw e
+    case e: SocketException =>
       if (reconnect) send(command)(result)
       else throw e
   }
