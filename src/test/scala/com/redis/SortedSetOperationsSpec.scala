@@ -1,6 +1,6 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.ShouldMatchers
@@ -10,7 +10,7 @@ import com.redis.RedisClient.{DESC, SUM}
 
 
 @RunWith(classOf[JUnitRunner])
-class SortedSetOperationsSpec extends Spec 
+class SortedSetOperationsSpec extends FunSpec 
                         with ShouldMatchers
                         with BeforeAndAfterEach
                         with BeforeAndAfterAll {

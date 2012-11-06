@@ -1,7 +1,6 @@
 package com.redis
 
-import scala.actors._
-import scala.actors.Actor._
+import akka.actor.Actor
 
 sealed trait Msg
 case class Subscribe(channels: Array[String]) extends Msg
@@ -13,37 +12,29 @@ case class Publish(channel: String, msg: String) extends Msg
 class Subscriber(client: RedisClient) extends Actor {
   var callback: PubSubMessage => Any = { m => }
 
-  def act = {
-    loop {
-      react {
-        case Subscribe(channels) =>
-          client.subscribe(channels.head, channels.tail: _*)(callback)
-          reply(true)
+  def receive = {
+    case Subscribe(channels) =>
+      client.subscribe(channels.head, channels.tail: _*)(callback)
+      sender ! true
 
-        case Register(cb) =>
-          callback = cb
-          reply(true)
+    case Register(cb) =>
+      callback = cb
+      sender ! true
 
-        case Unsubscribe(channels) =>
-          client.unsubscribe(channels.head, channels.tail: _*)
-          reply(true)
+    case Unsubscribe(channels) =>
+      client.unsubscribe(channels.head, channels.tail: _*)
+      sender ! true
 
-        case UnsubscribeAll =>
-          client.unsubscribe
-          reply(true)
-      }
-    }
+    case UnsubscribeAll =>
+      client.unsubscribe
+      sender ! true
   }
 }
 
 class Publisher(client: RedisClient) extends Actor {
-  def act = {
-    loop {
-      react {
-        case Publish(channel, message) =>
-          client.publish(channel, message)
-          reply(true)
-      }
-    }
+  def receive = {
+    case Publish(channel, message) =>
+      client.publish(channel, message)
+      sender ! true
   }
 }

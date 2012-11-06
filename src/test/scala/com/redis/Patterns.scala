@@ -1,10 +1,9 @@
 package com.redis
 
 import serialization._
-import java.util.concurrent.Executors
-import com.twitter.util.{Future, FuturePool, Return, TimeoutException}
-import com.twitter.conversions.time._
-import com.twitter.util.{Timer, JavaTimer}
+import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.duration._
+import akka.actor.ActorSystem
 
 /**
  * Implementing some of the common patterns like scatter/gather, which can benefit from
@@ -40,18 +39,17 @@ object Patterns {
     }
   }
 
-  implicit val timer = new JavaTimer
-
   // set up Executors
-  val futures = FuturePool(Executors.newFixedThreadPool(8))
+  val system = ActorSystem("ScatterGatherSystem")
+  import system.dispatcher
+
+  val timeout = 5 minutes
 
   private[this] def flow[A](noOfRecipients: Int, opsPerClient: Int, keyPrefix: String, 
     fn: (Int, String) => A) = {
     (1 to noOfRecipients) map {i => 
-      futures {
+      Future {
         fn(opsPerClient, "list_" + i)
-      }.within(40.seconds) handle {
-        case _: TimeoutException => null.asInstanceOf[A]
       }
     }
   }
@@ -61,17 +59,17 @@ object Patterns {
     // scatter
     val futurePushes = flow(100, opsPerClient, "list_", listPush)
 
-    // concurrent combinator: collect
-    val allPushes = Future.collect(futurePushes)
+    // concurrent combinator: Future.sequence
+    val allPushes = Future.sequence(futurePushes)
 
     // sequential combinator: flatMap
     val allSum = allPushes flatMap {result =>
       // gather
       val futurePops = flow(100, opsPerClient, "list_", listPop)
-      val allPops = Future.collect(futurePops)
+      val allPops = Future.sequence(futurePops)
       allPops map {members => members.sum}
     }
-    allSum.apply
+    Await.result(allSum, timeout).asInstanceOf[Long]
   }
 
   // scatter across clietns and gather the first future to complete
@@ -80,13 +78,12 @@ object Patterns {
     val futurePushes = flow(100, opsPerClient, "seq_", listPush)
 
     // wait for the first future to complete
-    val firstPush = Future.select(futurePushes)
+    val firstPush = Future.firstCompletedOf(futurePushes)
 
     // do a sum on the list whose key we got from firstPush
-    val firstSum = firstPush map {result =>
-      val Return(key) = result._1
+    val firstSum = firstPush map {key =>
       listPop(opsPerClient, key)
     }
-    firstSum.apply
+    Await.result(firstSum, timeout).asInstanceOf[Int]
   }
 }

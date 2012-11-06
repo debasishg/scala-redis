@@ -1,6 +1,6 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.ShouldMatchers
@@ -10,7 +10,7 @@ import org.junit.runner.RunWith
 import serialization._
 
 @RunWith(classOf[JUnitRunner])
-class SerializationSpec extends Spec 
+class SerializationSpec extends FunSpec 
                      with ShouldMatchers
                      with BeforeAndAfterEach
                      with BeforeAndAfterAll {

@@ -9,23 +9,21 @@ object ScalaRedisProject extends Build
   lazy val commonSettings: Seq[Setting[_]] = Seq(
     organization := "net.debasishg",
     version := "2.7",
-    // scalaVersion := "2.9.2",
-    crossScalaVersions := Seq("2.9.2", "2.9.1"),
-    scalacOptions ++= Seq("-deprecation", "-unchecked"),
-    resolvers ++= Seq(twitterRepo)
+    scalaVersion := "2.10.0-RC1",
+    scalaBinaryVersion := "2.10.0-RC1",
+    scalacOptions ++= Seq("-deprecation", "-unchecked")
   )
 
   lazy val coreSettings = commonSettings ++ Seq(
     name := "RedisClient",
 
     libraryDependencies ++= Seq("commons-pool" % "commons-pool" % "1.6",
-      "org.slf4j"      % "slf4j-api"     % "1.6.6",
-      "org.slf4j"      % "slf4j-log4j12" % "1.6.6"  % "provided",
-      "log4j"          % "log4j"         % "1.2.16" % "provided",
-      "junit"          % "junit"         % "4.8.1"  % "test",
-      "org.scalatest"  % "scalatest_2.9.1" % "1.6.1" % "test",
-      "com.twitter"    % "util_2.9.1"    % "1.12.13" % "test" intransitive(),
-      "com.twitter"    % "finagle-core_2.9.1"  % "4.0.2" % "test"),
+      "com.typesafe.akka" %%  "akka-actor"   % "2.1.0-RC1",
+      "org.slf4j"         %  "slf4j-api"     % "1.6.6",
+      "org.slf4j"         %  "slf4j-log4j12" % "1.6.6"      % "provided",
+      "log4j"             %  "log4j"         % "1.2.16"     % "provided",
+      "junit"             %  "junit"         % "4.8.1"      % "test",
+      "org.scalatest"     %% "scalatest"     % "1.8"        % "test"),
 
     parallelExecution in Test := false,
     publishTo <<= version { (v: String) => 
@@ -59,8 +57,4 @@ object ScalaRedisProject extends Build
       </developers>),
     unmanagedResources in Compile <+= baseDirectory map { _ / "LICENSE" }
   )
-}
-
-object Resolvers {
-  val twitterRepo = "release" at "http://maven.twttr.com"
 }

@@ -1,6 +1,6 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.ShouldMatchers
@@ -11,7 +11,7 @@ import scala.actors._
 import scala.actors.Actor._
 
 @RunWith(classOf[JUnitRunner])
-class PoolSpec extends Spec 
+class PoolSpec extends FunSpec 
                with ShouldMatchers
                with BeforeAndAfterEach
                with BeforeAndAfterAll {

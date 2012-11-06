@@ -1,10 +1,12 @@
 package com.redis
 
+import akka.actor.{ ActorSystem, Props }
+
 object Pub {
   println("starting publishing service ..")
+  val system = ActorSystem("pub")
   val r = new RedisClient("localhost", 6379)
-  val p = new Publisher(r)
-  p.start
+  val p = system.actorOf(Props(new Publisher(r)))
 
   def publish(channel: String, message: String) = {
     p ! Publish(channel, message)
@@ -13,9 +15,9 @@ object Pub {
 
 object Sub {
   println("starting subscription service ..")
+  val system = ActorSystem("sub")
   val r = new RedisClient("localhost", 6379)
-  val s = new Subscriber(r)
-  s.start
+  val s = system.actorOf(Props(new Subscriber(r)))
   s ! Register(callback) 
 
   def sub(channels: String*) = {
