@@ -31,7 +31,7 @@ trait NodeOperations { self: Redis =>
   // INFO
   // the info command returns different information and statistics about the server.
   def info =
-    send("INFO")(asString)
+    send("INFO")(asBulk)
   
   // MONITOR
   // is a debugging command that outputs the whole sequence of commands received by the Redis server.
@@ -50,5 +50,5 @@ trait NodeOperations { self: Redis =>
   @deprecated("use slaveof", "1.2.0") def slaveOf(options: Any): Boolean = slaveof(options)
 
   private def setAsMaster: Boolean =
-    send("SLAVEOF NO ONE")(asBoolean)
+    send("SLAVEOF", List("NO", "ONE"))(asBoolean)
 }
