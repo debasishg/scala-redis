@@ -1,8 +1,6 @@
 package com.redis
 
-import org.scalatest.FunSpec
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{OptionValues, FunSpec, BeforeAndAfterEach, BeforeAndAfterAll}
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
@@ -12,7 +10,8 @@ import org.junit.runner.RunWith
 class StringOperationsSpec extends FunSpec 
                            with ShouldMatchers
                            with BeforeAndAfterEach
-                           with BeforeAndAfterAll {
+                           with BeforeAndAfterAll
+                           with OptionValues {
 
   val r = new RedisClient("localhost", 6379)
 
@@ -113,6 +112,19 @@ class StringOperationsSpec extends FunSpec
       try {
         r.incrby("anshin-4", 5)
       } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not an integer") }
+    }
+  }
+
+  describe("incrbyfloat") {
+    it ("should increment by 0.1 for a key that contains a float") {
+      r.set("anshin-1", 9.9)
+      r.incrbyfloat("anshin-1", 0.1f).value should be (10.0 plusOrMinus 0.0000001)
+    }
+    it ("should reset to 0 and then increment by 0.1 for a key that contains a diff type") {
+      r.set("anshin-4", "debasish") should equal(true)
+      try {
+        r.incrbyfloat("anshin-4", 0.1)
+      } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not a valid float") }
     }
   }
 

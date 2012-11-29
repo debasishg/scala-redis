@@ -127,6 +127,7 @@ private [redis] trait R extends Reply {
 
   def asInt: Option[Int] =  receive(integerReply orElse queuedReplyInt)
   def asLong: Option[Long] =  receive(longReply orElse queuedReplyLong)
+  def asDouble: Option[Double] = asBulk[Double](Parse.Implicits.parseDouble)
 
   def asBoolean: Boolean = receive(integerReply orElse singleLineReply) match {
     case Some(n: Int) => n > 0
