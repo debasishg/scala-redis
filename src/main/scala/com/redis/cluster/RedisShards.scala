@@ -8,59 +8,10 @@ import com.redis._
 
 import serialization._
 
-/**
- * Consistent hashing distributes keys across multiple servers. But there are situations
- * like <i>sorting</i> or computing <i>set intersections</i> or operations like <tt>rpoplpush</tt>
- * in redis that require all keys to be collocated on the same server.
- * <p/>
- * One of the techniques that redis encourages for such forced key locality is called
- * <i>key tagging</i>. See <http://code.google.com/p/redis/wiki/FAQ> for reference.
- * <p/>
- * The trait <tt>KeyTag</tt> defines a method <tt>tag</tt> that takes a key and returns
- * the part of the key on which we hash to determine the server on which it will be located.
- * If it returns <tt>None</tt> then we hash on the whole key, otherwise we hash only on the
- * returned part.
- * <p/>
- * redis-rb implements a regex based trick to achieve key-tagging. Here is the technique
- * explained in redis FAQ:
- * <i>
- * A key tag is a special pattern inside a key that, if preset, is the only part of the key 
- * hashed in order to select the server for this key. For example in order to hash the key 
- * "foo" I simply perform the CRC32 checksum of the whole string, but if this key has a 
- * pattern in the form of the characters {...} I only hash this substring. So for example 
- * for the key "foo{bared}" the key hashing code will simply perform the CRC32 of "bared". 
- * This way using key tags you can ensure that related keys will be stored on the same Redis
- * instance just using the same key tag for all this keys. Redis-rb already implements key tags.
- * </i>
- */
-trait KeyTag {
-  def tag(key: Seq[Byte]): Option[Seq[Byte]]
-}
 
 import scala.util.matching.Regex
-object RegexKeyTag extends KeyTag {
 
-  val tagStart = '{'.toByte
-  val tagEnd = '}'.toByte
-
-  def tag(key: Seq[Byte]) = {
-    val start = key.indexOf(tagStart) + 1
-    if (start > 0) {
-      val end = key.indexOf(tagEnd, start)
-      if (end > -1) Some(key.slice(start,end)) else None
-    } else None
-  }
-}
-
-object NoOpKeyTag extends KeyTag {
-  def tag(key: Seq[Byte]) = Some(key)
-}
-
-case class ClusterNode(nodename: String, host: String, port: Int, database: Int = 0, maxIdle: Int = 8){
-  override def toString = nodename
-}
-
-abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
+abstract class RedisShards(val hosts: List[ClusterNode]) extends RedisCommand {
 
   // not needed at cluster level
   override val host = null
@@ -73,17 +24,16 @@ abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
   val POINTS_PER_SERVER = 160 // default in libmemcached
 
   // instantiating a cluster will automatically connect participating nodes to the server
-  val clients = hosts.toList.map {h => 
-    new IdentifiableRedisClientPool(h.nodename, h.host, h.port, h.maxIdle, h.database)
-  }
+  private var clients = hosts.map { h => (h.nodename, new RedisClientPool(h.host, h.port, h.maxIdle, h.database)) } toMap
 
   // the hash ring will instantiate with the nodes up and added
-  val hr = HashRing[IdentifiableRedisClientPool](clients, POINTS_PER_SERVER)
+  val hr = HashRing[ClusterNode](hosts, POINTS_PER_SERVER)
 
   // get node for the key
-  def nodeForKey(key: Any)(implicit format: Format): IdentifiableRedisClientPool = {
+  def nodeForKey(key: Any)(implicit format: Format): RedisClientPool = {
     val bKey = format(key)
-    hr.getNode(keyTag.flatMap(_.tag(bKey)).getOrElse(bKey))
+    val selectedNode = hr.getNode(keyTag.flatMap(_.tag(bKey)).getOrElse(bKey))
+    clients(selectedNode.nodename)
   }
   
   def processForKey[T](key: Any)(body: RedisCommand => T)(implicit format: Format): T = {
@@ -92,30 +42,33 @@ abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
 
   // add a server
   def addServer(server: ClusterNode) = {
-    hr addNode new IdentifiableRedisClientPool(server.nodename, server.host, server.port, server.maxIdle, server.database)
+    clients = clients + (server.nodename -> new RedisClientPool(server.host, server.port, server.maxIdle, server.database))
+    hr addNode server
   }
 
   // replace a server
   def replaceServer(server: ClusterNode) = {
-    hr replaceNode new IdentifiableRedisClientPool(server.nodename, server.host, server.port, server.maxIdle, server.database) match {
-        case Some(clientPool) => clientPool.close
-        case None => 
+    if (clients.contains(server.nodename)) {
+      clients(server.nodename).close
+      clients = clients - server.nodename
     }
+    clients = clients + (server.nodename -> new RedisClientPool(server.host, server.port, server.maxIdle, server.database))
+    hr replaceNode server
   }
 
   /**
    * Operations
    */
   override def keys[A](pattern: Any = "*")(implicit format: Format, parse: Parse[A]) =
-    Some(hr.cluster.toList.map(_.withClient(_.keys[A](pattern))).flatten.flatten)
+    Some(clients.values.toList.map(_.withClient(_.keys[A](pattern))).flatten.flatten)
 
   def onAllConns[T](body: RedisClient => T) = 
-    hr.cluster.map(p => p.withClient { client => body(client) }) // .forall(_ == true)
+    clients.values.map(p => p.withClient { client => body(client) }) // .forall(_ == true)
 
   override def flushdb = onAllConns(_.flushdb) forall(_ == true)
   override def flushall = onAllConns(_.flushall) forall(_ == true)
   override def quit = onAllConns(_.quit) forall(_ == true)
-  def close = hr.cluster.map(_.close)
+  def close = clients.values.map(_.close)
 
   override def rename(oldkey: Any, newkey: Any)(implicit format: Format): Boolean = processForKey(oldkey)(_.rename(oldkey, newkey))
   override def renamenx(oldkey: Any, newkey: Any)(implicit format: Format): Boolean = processForKey(oldkey)(_.renamenx(oldkey, newkey))

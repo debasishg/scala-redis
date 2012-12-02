@@ -42,3 +42,12 @@ class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int =
   // close pool & free resources
   def close = pool.close
 }
+
+/**
+ *
+ * @param poolname must be unique
+ */
+class IdentifiableRedisClientPool(poolname: String, host: String, port: Int, maxIdle: Int = 8, database: Int = 0)
+  extends RedisClientPool (host, port, maxIdle, database){
+  override def toString = poolname
+}

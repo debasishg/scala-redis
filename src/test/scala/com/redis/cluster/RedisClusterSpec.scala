@@ -6,6 +6,9 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
+import com.redis.RedisClient
+import com.redis.serialization.Format
+import collection.mutable.WrappedArray
 
 
 @RunWith(classOf[JUnitRunner])
@@ -14,7 +17,8 @@ class RedisClusterSpec extends FunSpec
                        with BeforeAndAfterEach
                        with BeforeAndAfterAll {
 
-  val r = new RedisCluster("localhost:6379", "localhost:6380", "localhost:6381") {
+  val nodes = Array(ClusterNode("node1", "localhost", 6379), ClusterNode("node2", "localhost", 6380), ClusterNode("node3", "localhost", 6381))
+  val r = new RedisCluster(new WrappedArray.ofRef(nodes): _*) {
     val keyTag = Some(RegexKeyTag)
   }
 
@@ -24,15 +28,19 @@ class RedisClusterSpec extends FunSpec
 
   override def afterAll = r.close
 
+  def formattedKey(key: Any)(implicit format: Format) = {
+    format(key)
+  }
+
   describe("cluster operations") {
     it("should set") {
       val l = List("debasish", "maulindu", "ramanendu", "nilanjan", "tarun", "tarun", "tarun")
 
       // last 3 should map to the same node
-      l.map(r.nodeForKey(_)).reverse.slice(0, 3).forall(_.toString == "localhost:6379") should equal(true)
+      l.map(r.nodeForKey(_)).reverse.slice(0, 3).forall(_.toString == "node2") should equal(true)
 
       // set
-      l foreach (s => r.nodeForKey(s).set(s, "working in anshin") should equal(true))
+      l foreach (s => r.processForKey(s)(_.set(s, "working in anshin")) should equal(true))
 
       // check get: should return all 5
       r.keys("*").get.size should equal(5)
@@ -42,7 +50,7 @@ class RedisClusterSpec extends FunSpec
       val l = List("debasish", "maulindu", "ramanendu", "nilanjan", "tarun", "tarun", "tarun")
 
       // set
-      l foreach (s =>  r.nodeForKey(s).set(s, s + " is working in anshin") should equal(true))
+      l foreach (s =>  r.processForKey(s)(_.set(s, s + " is working in anshin")) should equal(true))
 
       r.get("debasish").get should equal("debasish is working in anshin")
       r.get("maulindu").get should equal("maulindu is working in anshin")
@@ -53,7 +61,7 @@ class RedisClusterSpec extends FunSpec
       val l = List("debasish", "maulindu", "ramanendu", "nilanjan", "tarun", "tarun", "tarun")
 
       // set
-      l foreach (s => r.nodeForKey(s).set(s, s + " is working in anshin") should equal(true))
+      l foreach (s => r.processForKey(s)(_.set(s, s + " is working in anshin")) should equal(true))
 
       r.dbsize.get should equal(5)
       r.exists("debasish") should equal(true)
@@ -69,7 +77,7 @@ class RedisClusterSpec extends FunSpec
       val l = List("debasish", "maulindu", "ramanendu", "nilanjan", "tarun", "tarun", "tarun")
 
       // set
-      l foreach (s => r.nodeForKey(s).set(s, s + " is working in anshin") should equal(true))
+      l foreach (s => r.processForKey(s)(_.set(s, s + " is working in anshin")) should equal(true))
 
       // mget
       r.mget(l.head, l.tail: _*).get.map(_.get.split(" ")(0)) should equal(l)
@@ -93,6 +101,27 @@ class RedisClusterSpec extends FunSpec
       r.rpoplpush("java-virtual-machine-{langs}", "microsoft-platform-{langs}").get should equal("java")
       r.llen("java-virtual-machine-{langs}") should equal(Some(3))
       r.llen("microsoft-platform-{langs}") should equal(Some(2))
+    }
+
+    it("replace node should not change hash ring order"){
+      r.set("testkey1", "testvalue2")
+      r.get("testkey1") should equal (Some("testvalue2"))
+
+      val nodename = r.hr.getNode(formattedKey("testkey1")).toString
+
+      //simulate the same value is duplicated to slave
+      //for test, don't set to master, just to make sure the expected value is loaded from slave
+      val redisClient = new RedisClient("localhost", 6382)
+      redisClient.set("testkey1", "testvalue1")
+
+      //replaced master with slave on the same node
+      r.replaceServer(ClusterNode(nodename, "localhost", 6382))
+      r.get("testkey1") should equal (Some("testvalue1"))
+
+      //switch back to master. the old value is loaded
+      val oldnode = nodes.filter(_.nodename.equals(nodename))(0)
+      r.replaceServer(oldnode)
+      r.get("testkey1") should equal (Some("testvalue2"))
     }
   }
 }
