@@ -3,12 +3,13 @@ package com.redis
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 
-private [redis] class RedisClientFactory(host: String, port: Int, database: Int = 0) extends PoolableObjectFactory[RedisClient] {
+private [redis] class RedisClientFactory(host: String, port: Int, database: Int = 0, secret: Option[Any] = None) extends PoolableObjectFactory[RedisClient] {
   // when we make an object it's already connected
   def makeObject = {
     val cl = new RedisClient(host, port)
     if (database != 0)
       cl.select(database)
+    secret.foreach(cl auth _)
     cl
   }
 
@@ -26,8 +27,8 @@ private [redis] class RedisClientFactory(host: String, port: Int, database: Int 
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int = 0) {
-  val pool = new StackObjectPool(new RedisClientFactory(host, port, database), maxIdle)
+class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int = 0, secret: Option[Any] = None) {
+  val pool = new StackObjectPool(new RedisClientFactory(host, port, database, secret), maxIdle)
   override def toString = host + ":" + String.valueOf(port)
 
   def withClient[T](body: RedisClient => T) = {
