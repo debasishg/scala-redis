@@ -2,6 +2,7 @@ package com.redis
 
 import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
+import com.redis.cluster.ClusterNode
 
 private [redis] class RedisClientFactory(host: String, port: Int, database: Int = 0) extends PoolableObjectFactory[RedisClient] {
   // when we make an object it's already connected
@@ -26,7 +27,7 @@ private [redis] class RedisClientFactory(host: String, port: Int, database: Int 
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int = 0) {
+class RedisClientPool(val host: String, val port: Int, val maxIdle: Int = 8, val database: Int = 0) {
   val pool = new StackObjectPool(new RedisClientFactory(host, port, database), maxIdle)
   override def toString = host + ":" + String.valueOf(port)
 
@@ -47,7 +48,7 @@ class RedisClientPool(host: String, port: Int, maxIdle: Int = 8, database: Int =
  *
  * @param poolname must be unique
  */
-class IdentifiableRedisClientPool(poolname: String, host: String, port: Int, maxIdle: Int = 8, database: Int = 0)
-  extends RedisClientPool (host, port, maxIdle, database){
-  override def toString = poolname
+class IdentifiableRedisClientPool(val node: ClusterNode)
+  extends RedisClientPool (node.host, node.port, node.maxIdle, node.database){
+  override def toString = node.nodename
 }

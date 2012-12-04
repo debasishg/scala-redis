@@ -37,7 +37,7 @@ class RedisShardsSpec extends FunSpec
       val l = List("debasish", "maulindu", "ramanendu", "nilanjan", "tarun", "tarun", "tarun")
 
       // last 3 should map to the same node
-      l.map(r.nodeForKey(_)).reverse.slice(0, 3).forall(_.toString == "localhost:6380") should equal(true)
+      l.map(r.nodeForKey(_)).reverse.slice(0, 3).forall(_.toString == "node2") should equal(true)
 
       // set
       l foreach (s => r.processForKey(s)(_.set(s, "working in anshin")) should equal(true))
@@ -104,6 +104,9 @@ class RedisShardsSpec extends FunSpec
     }
 
     it("replace node should not change hash ring order"){
+      val r = new RedisShards(nodes) {
+		  val keyTag = Some(RegexKeyTag)
+	  }
       r.set("testkey1", "testvalue2")
       r.get("testkey1") should equal (Some("testvalue2"))
 
@@ -122,6 +125,32 @@ class RedisShardsSpec extends FunSpec
       val oldnode = nodes.filter(_.nodename.equals(nodename))(0)
       r.replaceServer(oldnode)
       r.get("testkey1") should equal (Some("testvalue2"))
+    }
+    
+    it("remove failure node should change hash ring order so that key on failure node should be served by other running nodes"){
+	  val r = new RedisShards(nodes) {
+		  val keyTag = Some(RegexKeyTag)
+	  }
+      r.set("testkey1", "testvalue2")
+      r.get("testkey1") should equal (Some("testvalue2"))
+
+      val nodename = r.hr.getNode(formattedKey("testkey1")).toString
+
+      //replaced master with slave on the same node
+      r.removeServer(nodename)
+      r.get("testkey1") should equal (None)
+
+      r.set("testkey1", "testvalue2")
+      r.get("testkey1") should equal (Some("testvalue2"))
+    }
+    
+    it("list nodes should return the running nodes but not configured nodes"){
+      val r = new RedisShards(nodes) {
+		  val keyTag = Some(RegexKeyTag)
+	  }
+      r.listServers.toSet should equal (nodes.toSet)
+      r.removeServer("node1")
+      r.listServers.toSet should equal (nodes.filterNot(_.nodename.equals("node1")).toSet)
     }
   }
 }

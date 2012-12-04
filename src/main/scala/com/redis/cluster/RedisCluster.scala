@@ -74,7 +74,7 @@ abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
 
   // instantiating a cluster will automatically connect participating nodes to the server
   val clients = hosts.toList.map {h => 
-    new IdentifiableRedisClientPool(h.nodename, h.host, h.port, h.maxIdle, h.database)
+    new IdentifiableRedisClientPool(h)
   }
 
   // the hash ring will instantiate with the nodes up and added
@@ -92,15 +92,31 @@ abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
 
   // add a server
   def addServer(server: ClusterNode) = {
-    hr addNode new IdentifiableRedisClientPool(server.nodename, server.host, server.port, server.maxIdle, server.database)
+    hr addNode new IdentifiableRedisClientPool(server)
   }
 
   // replace a server
   def replaceServer(server: ClusterNode) = {
-    hr replaceNode new IdentifiableRedisClientPool(server.nodename, server.host, server.port, server.maxIdle, server.database) match {
+    hr replaceNode new IdentifiableRedisClientPool(server) match {
         case Some(clientPool) => clientPool.close
         case None => 
     }
+  }
+  
+  //remove a server
+  def removeServer(nodename: String){
+    hr.cluster.find(_.node.nodename.equals(nodename)) match {
+      case Some(pool) => {
+        hr removeNode(pool)
+        pool.close
+      }
+      case None =>
+    }
+  }
+  
+  //list all running servers
+  def listServers: List[ClusterNode] = {
+    hr.cluster.map(_.node).toList
   }
 
   /**

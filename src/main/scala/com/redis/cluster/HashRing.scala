@@ -27,7 +27,7 @@ case class HashRing[T](nodes: List[T], replicas: Int) {
   def replaceNode(node: T): Option[T] = {
     var replacedNode: Option[T] = None
     for (i <- 0 until cluster.size){
-      if (cluster.toString().equals(node.toString)){
+      if (cluster(i).toString().equals(node.toString)){
         replacedNode = Some(cluster(i))
         cluster(i) = node
       }
