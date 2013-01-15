@@ -230,7 +230,7 @@ abstract class RedisShards(val hosts: List[ClusterNode]) extends RedisCommand {
   override def zadd(key: Any, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format) = 
     processForKey(key)(_.zadd(key, score, member, scoreVals:_*))
   override def zrem(key: Any, member: Any, members: Any*)(implicit format: Format): Option[Long] = 
-    processForKey(key)(_.zrem(key, member, members))
+    processForKey(key)(_.zrem(key, member, members: _*))
   override def zincrby(key: Any, incr: Double, member: Any)(implicit format: Format) = processForKey(key)(_.zincrby(key, incr, member))
   override def zcard(key: Any)(implicit format: Format) = processForKey(key)(_.zcard(key))
   override def zscore(key: Any, element: Any)(implicit format: Format) = processForKey(key)(_.zscore(key, element))
