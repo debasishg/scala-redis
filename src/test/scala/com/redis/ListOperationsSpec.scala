@@ -47,6 +47,18 @@ class ListOperationsSpec extends FunSpec
     }
   }
 
+  describe("lpushx") {
+    it("should add to the tail of the list") {
+      r.lpush("list-1", "foo") should equal(Some(1))
+      r.lpushx("list-1", "bar") should equal(Some(2))
+    }
+    it("should throw if the key has a non-list value") {
+      r.set("anshin-1", "debasish") should equal(true)
+      val thrown = evaluating { r.lpushx("anshin-1", "bar") } should produce [Exception]
+      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+    }
+  }
+
   describe("rpush") {
     it("should add to the head of the list") {
       r.rpush("list-1", "foo") should equal(Some(1))
@@ -64,6 +76,18 @@ class ListOperationsSpec extends FunSpec
       r.rpush("list-1", "foo", "bar", "baz") should equal(Some(3))
       r.rpush("list-1", "bag", "fog") should equal(Some(5))
       r.rpush("list-1", "bag", "fog") should equal(Some(7))
+    }
+  }
+
+  describe("rpushx") {
+    it("should add to the tail of the list") {
+      r.rpush("list-1", "foo") should equal(Some(1))
+      r.rpushx("list-1", "bar") should equal(Some(2))
+    }
+    it("should throw if the key has a non-list value") {
+      r.set("anshin-1", "debasish") should equal(true)
+      val thrown = evaluating { r.rpushx("anshin-1", "bar") } should produce [Exception]
+      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
     }
   }
 

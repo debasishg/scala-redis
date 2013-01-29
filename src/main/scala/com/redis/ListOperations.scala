@@ -9,10 +9,20 @@ trait ListOperations { self: Redis =>
   def lpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
     send("LPUSH", List(key, value) ::: values.toList)(asLong)
 
+  // LPUSHX (Variadic: >= 2.4)
+  // add value to the tail of the list stored at key
+  def lpushx(key: Any, value: Any)(implicit format: Format): Option[Long] =
+    send("LPUSHX", List(key, value))(asLong)
+
   // RPUSH (Variadic: >= 2.4)
-  // add value to the head of the list stored at key
+  // add values to the head of the list stored at key
   def rpush(key: Any, value: Any, values: Any*)(implicit format: Format): Option[Long] =
     send("RPUSH", List(key, value) ::: values.toList)(asLong)
+
+  // RPUSHX (Variadic: >= 2.4)
+  // add value to the tail of the list stored at key
+  def rpushx(key: Any, value: Any)(implicit format: Format): Option[Long] =
+    send("RPUSHX", List(key, value))(asLong)
 
   // LLEN
   // return the length of the list stored at the specified key.
