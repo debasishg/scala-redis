@@ -69,11 +69,16 @@ class RedisClient(override val host: String, override val port: Int)
     send("MULTI")(asString) // flush reply stream
     try {
       val pipelineClient = new PipelineClient(this)
-      f(pipelineClient)
+      try {
+        f(pipelineClient)
+      } catch {
+        case e: Exception =>
+          send("DISCARD")(asString)
+          throw e
+      }
       send("EXEC")(asExec(pipelineClient.handlers))
     } catch {
       case e: RedisMultiExecException => 
-        send("DISCARD")(asString)
         None
     }
   }
