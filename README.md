@@ -103,60 +103,66 @@ scala-redis is a blocking client, which serves the purpose in most of the cases 
 
 scala-redis includes a Pool implementation which can be used to serve this purpose. Based on Apache Commons Pool implementation, RedisClientPool maintains a pool of instances of RedisClient, which can grow based on demand. Here's a sample usage ..
 
-    val clients = new RedisClientPool("localhost", 6379)
-    def lp(msgs: List[String]) = {
-      clients.withClient {
-        client => {
-          msgs.foreach(client.lpush("list-l", _))
-          client.llen("list-l")
-        }
-      }
+```scala
+val clients = new RedisClientPool("localhost", 6379)
+def lp(msgs: List[String]) = {
+  clients.withClient {
+    client => {
+      msgs.foreach(client.lpush("list-l", _))
+      client.llen("list-l")
     }
+  }
+}
+```
 
 Using a combination of pooling and futures, scala-redis can be throttled for more parallelism. This is the typical recommended strategy if you are looking forward to scale up using this redis client. Here's a sample usage .. we are doing a parallel throttle of an lpush, rpush and set operations in redis, each repeated a number of times ..
 
 If we have a pool initialized, then we can use the pool to repeat the following operations. 
 
-    // lpush
-    def lp(msgs: List[String]) = {
-      clients.withClient {
-        client => {
-          msgs.foreach(client.lpush("list-l", _))
-          client.llen("list-l")
-        }
-      }
+```scala
+// lpush
+def lp(msgs: List[String]) = {
+  clients.withClient {
+    client => {
+      msgs.foreach(client.lpush("list-l", _))
+      client.llen("list-l")
     }
+  }
+}
 
-    // rpush
-    def rp(msgs: List[String]) = {
-      clients.withClient {
-        client => {
-          msgs.foreach(client.rpush("list-r", _))
-          client.llen("list-r")
-        }
-      }
+// rpush
+def rp(msgs: List[String]) = {
+  clients.withClient {
+    client => {
+      msgs.foreach(client.rpush("list-r", _))
+      client.llen("list-r")
     }
+  }
+}
 
-    // set
-    def set(msgs: List[String]) = {
-      clients.withClient {
-        client => {
-          var i = 0
-          msgs.foreach { v =>
-            client.set("key-%d".format(i), v)
-            i += 1
-          }
-          Some(1000)
-        }
+// set
+def set(msgs: List[String]) = {
+  clients.withClient {
+    client => {
+      var i = 0
+      msgs.foreach { v =>
+        client.set("key-%d".format(i), v)
+        i += 1
       }
+      Some(1000)
     }
+  }
+}
+```
 
 And here's the snippet that throttles our redis server with the above operations in a non blocking mode using Scala futures:
 
-    val l = (0 until 5000).map(_.toString).toList
-    val fns = List[List[String] => Option[Int]](lp, rp, set)
-    val tasks = fns map (fn => scala.actors.Futures.future { fn(l) })
-    val results = tasks map (future => future.apply())
+```scala
+val l = (0 until 5000).map(_.toString).toList
+val fns = List[List[String] => Option[Int]](lp, rp, set)
+val tasks = fns map (fn => scala.actors.Futures.future { fn(l) })
+val results = tasks map (future => future.apply())
+```
 
 ## Implementing asynchronous patterns using pooling and Futures
 
@@ -164,53 +170,55 @@ scala-redis is a blocking client for Redis. But you can develop high performance
 
 Here's the main routine that implements the pattern:
 
-    // set up Executors
-    val system = ActorSystem("ScatterGatherSystem")
-    import system.dispatcher
+```scala
+// set up Executors
+val system = ActorSystem("ScatterGatherSystem")
+import system.dispatcher
 
-    val timeout = 5 minutes
+val timeout = 5 minutes
 
-    private[this] def flow[A](noOfRecipients: Int, opsPerClient: Int, keyPrefix: String, 
-      fn: (Int, String) => A) = {
-      (1 to noOfRecipients) map {i => 
-        Future {
-          fn(opsPerClient, "list_" + i)
-        }
-      }
+private[this] def flow[A](noOfRecipients: Int, opsPerClient: Int, keyPrefix: String, 
+  fn: (Int, String) => A) = {
+  (1 to noOfRecipients) map {i => 
+    Future {
+      fn(opsPerClient, "list_" + i)
     }
+  }
+}
 
-    // scatter across clients and gather them to do a sum
-    def scatterGatherWithList(opsPerClient: Int)(implicit clients: RedisClientPool) = {
-      // scatter
-      val futurePushes = flow(100, opsPerClient, "list_", listPush)
+// scatter across clients and gather them to do a sum
+def scatterGatherWithList(opsPerClient: Int)(implicit clients: RedisClientPool) = {
+  // scatter
+  val futurePushes = flow(100, opsPerClient, "list_", listPush)
 
-      // concurrent combinator: Future.sequence
-      val allPushes = Future.sequence(futurePushes)
+  // concurrent combinator: Future.sequence
+  val allPushes = Future.sequence(futurePushes)
 
-      // sequential combinator: flatMap
-      val allSum = allPushes flatMap {result =>
-        // gather
-        val futurePops = flow(100, opsPerClient, "list_", listPop)
-        val allPops = Future.sequence(futurePops)
-        allPops map {members => members.sum}
-      }
-      Await.result(allSum, timeout).asInstanceOf[Long]
-    }
+  // sequential combinator: flatMap
+  val allSum = allPushes flatMap {result =>
+    // gather
+    val futurePops = flow(100, opsPerClient, "list_", listPop)
+    val allPops = Future.sequence(futurePops)
+    allPops map {members => members.sum}
+  }
+  Await.result(allSum, timeout).asInstanceOf[Long]
+}
 
-    // scatter across clietns and gather the first future to complete
-    def scatterGatherFirstWithList(opsPerClient: Int)(implicit clients: RedisClientPool) = {
-      // scatter phase: push to 100 lists in parallel
-      val futurePushes = flow(100, opsPerClient, "seq_", listPush)
+// scatter across clietns and gather the first future to complete
+def scatterGatherFirstWithList(opsPerClient: Int)(implicit clients: RedisClientPool) = {
+  // scatter phase: push to 100 lists in parallel
+  val futurePushes = flow(100, opsPerClient, "seq_", listPush)
 
-      // wait for the first future to complete
-      val firstPush = Future.firstCompletedOf(futurePushes)
+  // wait for the first future to complete
+  val firstPush = Future.firstCompletedOf(futurePushes)
 
-      // do a sum on the list whose key we got from firstPush
-      val firstSum = firstPush map {key =>
-        listPop(opsPerClient, key)
-      }
-      Await.result(firstSum, timeout).asInstanceOf[Int]
-    }
+  // do a sum on the list whose key we got from firstPush
+  val firstSum = firstPush map {key =>
+    listPop(opsPerClient, key)
+  }
+  Await.result(firstSum, timeout).asInstanceOf[Int]
+}
+```
 
 ## License
 
