@@ -45,7 +45,13 @@ trait PubSub { self: Redis =>
                   break
                 case "unsubscribe" | "punsubscribe" => 
                   fn(U(channel, data.toInt))
-                case "message" | "pmessage" => 
+                case "message" =>
+                  fn(M(channel, data))
+                case x => throw new RuntimeException("unhandled message: " + x)
+              }
+            case Some(Some(msgType) :: Some(pattern) :: Some(channel) :: List(Some(data))) =>
+              msgType match {
+                case "pmessage" =>
                   fn(M(channel, data))
                 case x => throw new RuntimeException("unhandled message: " + x)
               }
