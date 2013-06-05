@@ -9,23 +9,34 @@ trait StringOperations { self: Redis =>
   def set(key: Any, value: Any)(implicit format: Format): Boolean =
     send("SET", List(key, value))(asBoolean)
 
+  // SET key value [EX seconds] [PX milliseconds] [NX|XX]
+  // set the string value of a key
+  // Starting with Redis 2.6.12 SET supports a set of options that modify its behavior:
+  // EX seconds -- Set the specified expire time, in seconds.
+  // PX milliseconds -- Set the specified expire time, in milliseconds.
+  // NX -- Only set the key if it does not already exist.
+  // XX -- Only set the key if it already exist.
+  def set(key: Any, value: Any, nxxx: Any, expx: Any, time: Long): Boolean = {
+    send("SET", List(key, value, nxxx, expx, time))(asBoolean)
+  }
+
   // GET (key)
   // gets the value for the specified key.
   def get[A](key: Any)(implicit format: Format, parse: Parse[A]): Option[A] =
     send("GET", List(key))(asBulk)
-  
+
   // GETSET (key, value)
   // is an atomic set this value and return the old value command.
   def getset[A](key: Any, value: Any)(implicit format: Format, parse: Parse[A]): Option[A] =
     send("GETSET", List(key, value))(asBulk)
-  
+
   // SETNX (key, value)
   // sets the value for the specified key, only if the key is not there.
   def setnx(key: Any, value: Any)(implicit format: Format): Boolean =
     send("SETNX", List(key, value))(asBoolean)
 
   def setex(key: Any, expiry: Int, value: Any)(implicit format: Format): Boolean =
-    send("SETEX", List(key, expiry, value))(asBoolean) 
+    send("SETEX", List(key, expiry, value))(asBoolean)
 
   // INCR (key)
   // increments the specified key by 1
@@ -63,13 +74,13 @@ trait StringOperations { self: Redis =>
     send("MSETNX", kvs.foldRight(List[Any]()){ case ((k,v),l) => k :: v :: l })(asBoolean)
 
   // SETRANGE key offset value
-  // Overwrites part of the string stored at key, starting at the specified offset, 
+  // Overwrites part of the string stored at key, starting at the specified offset,
   // for the entire length of value.
   def setrange(key: Any, offset: Int, value: Any)(implicit format: Format): Option[Long] =
     send("SETRANGE", List(key, offset, value))(asLong)
 
   // GETRANGE key start end
-  // Returns the substring of the string value stored at key, determined by the offsets 
+  // Returns the substring of the string value stored at key, determined by the offsets
   // start and end (both are inclusive).
   def getrange[A](key: Any, start: Int, end: Int)(implicit format: Format, parse: Parse[A]): Option[A] =
     send("GETRANGE", List(key, start, end))(asBulk)
