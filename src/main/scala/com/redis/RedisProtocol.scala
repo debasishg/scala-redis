@@ -40,6 +40,7 @@ private [redis] trait Reply {
   type Reply[T] = PartialFunction[(Char, Array[Byte]), T]
   type SingleReply = Reply[Option[Array[Byte]]]
   type MultiReply = Reply[Option[List[Option[Array[Byte]]]]]
+  type MultiMultiReply = Reply[Option[List[Option[List[Option[Array[Byte]]]]]]]
 
   def readLine: Array[Byte]
   def readCounted(c: Int): Array[Byte]
@@ -77,6 +78,14 @@ private [redis] trait Reply {
       Parsers.parseInt(str) match {
         case -1 => None
         case n => Some(List.fill(n)(receive(bulkReply orElse singleLineReply)))
+      }
+  }
+
+  val multiMultiBulkReply: MultiMultiReply = {
+    case (MULTI, str) =>
+      Parsers.parseInt(str) match {
+        case -1 => None
+        case n => Some(List.fill(n)(receive(multiBulkReply)))
       }
   }
 
@@ -145,6 +154,12 @@ private [redis] trait R extends Reply {
       case List(Some(a), Some(b)) => Iterator.single(Some((parseA(a), parseB(b))))
       case _ => Iterator.single(None)
     }.toList)
+
+  def asListOfListPairs[A,B](implicit parseA: Parse[A], parseB: Parse[B]): Option[List[Option[List[Option[(A,B)]]]]] =
+    receive(multiMultiBulkReply).map(_.map(_.map(_.grouped(2).map {
+      case List(Some(a), Some(b)) => Some((parseA(a), parseB(b)))
+      case _ => None
+    }.toList)))
 
   def asQueuedList: Option[List[Option[String]]] = receive(queuedReplyList).map(_.map(_.map(Parsers.parseString)))
 

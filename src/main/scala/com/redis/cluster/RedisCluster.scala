@@ -67,8 +67,7 @@ case class ClusterNode(nodename: String, host: String, port: Int, database: Int 
 abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
 
   // not needed at cluster level
-  override val host = null
-  override val port = 0
+  lazy val addr = new FixedAddress(null, 0)
 
   // abstract val
   val keyTag: Option[KeyTag]

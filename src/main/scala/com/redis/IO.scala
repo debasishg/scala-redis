@@ -1,15 +1,18 @@
 package com.redis
 
 import java.io._
-import java.net.{Socket, InetSocketAddress}
+import java.net.{InetAddress, Socket, InetSocketAddress}
 
 import serialization.Parse.parseStringSafe
 
 trait IO extends Log {
-  val host: String
-  val port: Int
+  val addr: NodeAddress
+  def host: String = addr.addr._1
+  def port: Int = addr.addr._2
 
-  var socket: Socket = _
+  addr onChange onAddrChange
+
+  @volatile var socket: Socket = _
   var out: OutputStream = _
   var in: InputStream = _
   var db: Int = _
@@ -21,9 +24,17 @@ trait IO extends Log {
     disconnect && connect
   }
 
+  protected def onAddrChange(addr: InetSocketAddress) {
+    val sock = socket
+    if (sock != null && sock.getRemoteSocketAddress != addr) {
+      sock.close() // just close the socket (pretend the server closed it)
+    }
+  }
+
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {
     try {
+      val (host, port) = addr.addr
       socket = new Socket(host, port)
 
       socket.setSoTimeout(0)

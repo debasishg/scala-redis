@@ -57,11 +57,12 @@ trait RedisCommand extends Redis
   with EvalOperations
   
 
-class RedisClient(override val host: String, override val port: Int)
+class RedisClient(val addr: NodeAddress)
   extends RedisCommand with PubSub {
 
   connect
 
+  def this(host: String, port: Int) = this(new FixedAddress(host, port))
   def this() = this("localhost", 6379)
   override def toString = host + ":" + String.valueOf(port)
 
@@ -153,8 +154,7 @@ class RedisClient(override val host: String, override val port: Int)
       null.asInstanceOf[A]
     }
 
-    val host = parent.host
-    val port = parent.port
+    lazy val addr = parent.addr
 
     // TODO: Find a better abstraction
     override def connected = parent.connected
