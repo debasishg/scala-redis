@@ -27,6 +27,13 @@ trait StringOperations { self: Redis =>
   def setex(key: Any, expiry: Int, value: Any)(implicit format: Format): Boolean =
     send("SETEX", List(key, expiry, value))(asBoolean) 
 
+  // SETEX (key, time, value)
+  // atomically sets the value for the specified key and expire time (in sec.)
+  def setex(key: String, expiry: Int, value: String) : Boolean = {
+    send("SETEX", key, String.valueOf(expiry), value)
+    asBoolean
+  }
+
   // INCR (key)
   // increments the specified key by 1
   def incr(key: Any)(implicit format: Format): Option[Int] =
