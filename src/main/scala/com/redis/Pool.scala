@@ -9,11 +9,7 @@ private [redis] class RedisClientFactory(val host: String, val port: Int, val da
 
   // when we make an object it's already connected
   def makeObject = {
-    val cl = new RedisClient(host, port)
-    if (database != 0)
-      cl.select(database)
-    secret.foreach(cl auth _)
-    cl
+    new RedisClient(host, port, database, secret)
   }
 
   // quit & disconnect

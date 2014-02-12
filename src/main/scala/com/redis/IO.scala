@@ -17,9 +17,6 @@ trait IO extends Log {
   def connected = {
     socket != null && socket.isBound() && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown();
   }
-  def reconnect = {
-    disconnect && connect
-  }
 
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {

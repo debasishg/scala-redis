@@ -44,10 +44,39 @@ trait Redis extends IO with Protocol {
 
   protected def flattenPairs(in: Iterable[Product2[Any, Any]]): List[Any] =
     in.iterator.flatMap(x => Iterator(x._1, x._2)).toList
+
+  def reconnect: Boolean = {
+    disconnect && initialize
+  }
+  
+  protected def initialize : Boolean
 }
 
-trait RedisCommand extends Redis
-  with Operations 
+trait RedisCommandOperations extends Redis with Operations {
+  val database: Int = 0
+  val secret: Option[Any] = None
+  
+  override def initialize : Boolean = {
+    if(connect) {
+      selectDatabase
+      authenticate
+      true
+    } else {
+      false
+    }
+  }
+  
+  private def selectDatabase {
+    if (database != 0)
+      select(database)
+  }
+
+  private def authenticate {
+    secret.foreach(auth _)
+  }
+}
+
+trait RedisCommand extends RedisCommandOperations
   with NodeOperations 
   with StringOperations
   with ListOperations
@@ -57,10 +86,11 @@ trait RedisCommand extends Redis
   with EvalOperations
   
 
-class RedisClient(override val host: String, override val port: Int)
+class RedisClient(override val host: String, override val port: Int,
+    override val database: Int = 0, override val secret: Option[Any] = None)
   extends RedisCommand with PubSub {
 
-  connect
+  initialize
 
   def this() = this("localhost", 6379)
   override def toString = host + ":" + String.valueOf(port)
@@ -82,6 +112,7 @@ class RedisClient(override val host: String, override val port: Int)
         None
     }
   }
+  
   import serialization.Parse
 
   import scala.concurrent.{Promise, Future}
@@ -155,6 +186,8 @@ class RedisClient(override val host: String, override val port: Int)
 
     val host = parent.host
     val port = parent.port
+    override val secret = parent.secret
+    override val database = parent.database
 
     // TODO: Find a better abstraction
     override def connected = parent.connected
@@ -165,5 +198,6 @@ class RedisClient(override val host: String, override val port: Int)
     override def write(data: Array[Byte]) = parent.write(data)
     override def readLine = parent.readLine
     override def readCounted(count: Int) = parent.readCounted(count)
+    override def initialize = parent.initialize
   }
 }
