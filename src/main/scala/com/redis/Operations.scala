@@ -122,7 +122,7 @@ trait Operations { self: Redis =>
   // SELECT (index)
   // selects the DB to connect, defaults to 0 (zero).
   def select(index: Int): Boolean =
-    send("SELECT", List(index))(asBoolean match {
+    sendWithoutAuth("SELECT", List(index))(asBoolean match {
       case true => {
         db = index
         true
@@ -154,7 +154,7 @@ trait Operations { self: Redis =>
   // AUTH
   // auths with the server.
   def auth(secret: Any)(implicit format: Format): Boolean =
-    send("AUTH", List(secret))(asBoolean)
+    sendWithoutAuth("AUTH", List(secret))(asBoolean)
 
   // PERSIST (key)
   // Remove the existing timeout on key, turning the key from volatile (a key with an expire set) 

@@ -43,7 +43,6 @@ private [redis] trait Reply {
 
   def readLine: Array[Byte]
   def readCounted(c: Int): Array[Byte]
-  def reconnect: Boolean
 
   val integerReply: Reply[Option[Int]] = {
     case (INT, s) => Some(Parsers.parseInt(s))
@@ -91,8 +90,8 @@ private [redis] trait Reply {
   }
 
   val errReply: Reply[Nothing] = {
-    case (ERR, s) => reconnect; throw new Exception(Parsers.parseString(s))
-    case x => reconnect; throw new Exception("Protocol error: Got " + x + " as initial reply byte")
+    case (ERR, s) => throw new Exception(Parsers.parseString(s))
+    case x => throw new Exception("Protocol error: Got " + x + " as initial reply byte")
   }
 
   def queuedReplyInt: Reply[Option[Int]] = {

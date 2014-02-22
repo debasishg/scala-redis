@@ -27,6 +27,18 @@ trait Redis extends IO with Protocol {
       if (reconnect) send(command, args)(result)
       else throw e
   }
+  
+  def sendWithoutAuth[A](command: String, args: Seq[Any])(result: => A)(implicit format: Format): A = try {
+    write(Commands.multiBulk(command.getBytes("UTF-8") +: (args map (format.apply))))
+    result
+  } catch {
+    case e: RedisConnectionException =>
+      if (reconnectWithoutAuth) sendWithoutAuth(command, args)(result)
+      else throw e
+    case e: SocketException =>
+      if (reconnectWithoutAuth) sendWithoutAuth(command, args)(result)
+      else throw e
+  }
 
   def send[A](command: String)(result: => A): A = try {
     write(Commands.multiBulk(List(command.getBytes("UTF-8"))))
@@ -45,6 +57,10 @@ trait Redis extends IO with Protocol {
   protected def flattenPairs(in: Iterable[Product2[Any, Any]]): List[Any] =
     in.iterator.flatMap(x => Iterator(x._1, x._2)).toList
 
+  def reconnectWithoutAuth: Boolean = {
+    disconnect && connect
+  }
+    
   def reconnect: Boolean = {
     disconnect && initialize
   }
@@ -52,7 +68,15 @@ trait Redis extends IO with Protocol {
   protected def initialize : Boolean
 }
 
-trait RedisCommandOperations extends Redis with Operations {
+trait RedisCommand extends Redis with Operations
+  with NodeOperations 
+  with StringOperations
+  with ListOperations
+  with SetOperations
+  with SortedSetOperations
+  with HashOperations
+  with EvalOperations {
+
   val database: Int = 0
   val secret: Option[Any] = None
   
@@ -74,16 +98,8 @@ trait RedisCommandOperations extends Redis with Operations {
   private def authenticate {
     secret.foreach(auth _)
   }
+  
 }
-
-trait RedisCommand extends RedisCommandOperations
-  with NodeOperations 
-  with StringOperations
-  with ListOperations
-  with SetOperations
-  with SortedSetOperations
-  with HashOperations
-  with EvalOperations
   
 
 class RedisClient(override val host: String, override val port: Int,
