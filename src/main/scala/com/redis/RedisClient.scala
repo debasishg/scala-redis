@@ -27,6 +27,18 @@ trait Redis extends IO with Protocol {
       if (reconnect) send(command, args)(result)
       else throw e
   }
+  
+  def sendWithoutAuth[A](command: String, args: Seq[Any])(result: => A)(implicit format: Format): A = try {
+    write(Commands.multiBulk(command.getBytes("UTF-8") +: (args map (format.apply))))
+    result
+  } catch {
+    case e: RedisConnectionException =>
+      if (reconnectWithoutAuth) sendWithoutAuth(command, args)(result)
+      else throw e
+    case e: SocketException =>
+      if (reconnectWithoutAuth) sendWithoutAuth(command, args)(result)
+      else throw e
+  }
 
   def send[A](command: String)(result: => A): A = try {
     write(Commands.multiBulk(List(command.getBytes("UTF-8"))))
@@ -44,23 +56,57 @@ trait Redis extends IO with Protocol {
 
   protected def flattenPairs(in: Iterable[Product2[Any, Any]]): List[Any] =
     in.iterator.flatMap(x => Iterator(x._1, x._2)).toList
+
+  def reconnectWithoutAuth: Boolean = {
+    disconnect && connect
+  }
+    
+  def reconnect: Boolean = {
+    disconnect && initialize
+  }
+  
+  protected def initialize : Boolean
 }
 
-trait RedisCommand extends Redis
-  with Operations 
+trait RedisCommand extends Redis with Operations
   with NodeOperations 
   with StringOperations
   with ListOperations
   with SetOperations
   with SortedSetOperations
   with HashOperations
-  with EvalOperations
+  with EvalOperations {
+
+  val database: Int = 0
+  val secret: Option[Any] = None
+  
+  override def initialize : Boolean = {
+    if(connect) {
+      selectDatabase
+      authenticate
+      true
+    } else {
+      false
+    }
+  }
+  
+  private def selectDatabase {
+    if (database != 0)
+      select(database)
+  }
+
+  private def authenticate {
+    secret.foreach(auth _)
+  }
+  
+}
   
 
-class RedisClient(override val host: String, override val port: Int)
+class RedisClient(override val host: String, override val port: Int,
+    override val database: Int = 0, override val secret: Option[Any] = None)
   extends RedisCommand with PubSub {
 
-  connect
+  initialize
 
   def this() = this("localhost", 6379)
   override def toString = host + ":" + String.valueOf(port)
@@ -82,6 +128,7 @@ class RedisClient(override val host: String, override val port: Int)
         None
     }
   }
+  
   import serialization.Parse
 
   import scala.concurrent.{Promise, Future}
@@ -155,6 +202,8 @@ class RedisClient(override val host: String, override val port: Int)
 
     val host = parent.host
     val port = parent.port
+    override val secret = parent.secret
+    override val database = parent.database
 
     // TODO: Find a better abstraction
     override def connected = parent.connected
@@ -165,5 +214,6 @@ class RedisClient(override val host: String, override val port: Int)
     override def write(data: Array[Byte]) = parent.write(data)
     override def readLine = parent.readLine
     override def readCounted(count: Int) = parent.readCounted(count)
+    override def initialize = parent.initialize
   }
 }
