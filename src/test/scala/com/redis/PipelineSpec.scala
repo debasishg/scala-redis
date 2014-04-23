@@ -51,14 +51,13 @@ class PipelineSpec extends FunSpec
 
   describe("pipeline3") {
     it("should handle errors properly in pipelined commands") {
-      val thrown = 
-        evaluating {
+      val thrown = the [Exception] thrownBy {
           r.pipeline { p =>
             p.set("a", "abc")
             p.lpop("a")
           }
-        } should produce [Exception]
-      thrown.getMessage should equal ("ERR Operation against a key holding the wrong kind of value")
+        }
+      thrown.getMessage should equal ("WRONGTYPE Operation against a key holding the wrong kind of value")
       r.get("a").get should equal("abc")
     }
   }

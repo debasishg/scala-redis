@@ -9,7 +9,7 @@ object ScalaRedisProject extends Build
   lazy val commonSettings: Seq[Setting[_]] = Seq(
     organization := "net.debasishg",
     version := "2.12",
-    scalaVersion := "2.10.2",
+    scalaVersion := "2.11.0",
     crossScalaVersions := Seq("2.10.0"),
 
     scalacOptions <++= scalaVersion.map {sv =>
@@ -24,13 +24,12 @@ object ScalaRedisProject extends Build
     name := "RedisClient",
     libraryDependencies := Seq(
       "commons-pool"      %  "commons-pool"            % "1.6",
-      "com.typesafe.akka" %%  "akka-actor"             % "2.2.0",
       "org.slf4j"         %  "slf4j-api"               % "1.7.2",
       "org.slf4j"         %  "slf4j-log4j12"           % "1.7.2"      % "provided",
       "log4j"             %  "log4j"                   % "1.2.16"     % "provided",
-      "org.scala-lang"    %  "scala-actors"            % "2.10.2"     % "test",
+      "com.typesafe.akka" %% "akka-actor"              % "2.3.2",
       "junit"             %  "junit"                   % "4.8.1"      % "test",
-      "org.scalatest"     %%  "scalatest"              % "2.0.RC1-SNAP4" % "test"),
+      "org.scalatest"     %%  "scalatest"              % "2.1.3" % "test"),
 
     parallelExecution in Test := false,
     publishTo <<= version { (v: String) => 

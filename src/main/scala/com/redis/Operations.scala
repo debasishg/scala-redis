@@ -5,22 +5,22 @@ import serialization._
 trait Operations { self: Redis =>
   // SORT
   // sort keys in a set, and optionally pull values for them
-  def sort[A](key:String, 
-              limit:Option[Pair[Int, Int]] = None, 
-              desc:Boolean = false, 
-              alpha:Boolean = false, 
-              by:Option[String] = None, 
+  def sort[A](key:String,
+              limit:Option[(Int, Int)] = None,
+              desc:Boolean = false,
+              alpha:Boolean = false,
+              by:Option[String] = None,
               get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
 
     val commands:List[Any] = makeSortArgs(key, limit, desc, alpha, by, get)
     send("SORT", commands)(asList)
   }
 
-  private def makeSortArgs(key:String, 
-              limit:Option[Pair[Int, Int]] = None, 
-              desc:Boolean = false, 
-              alpha:Boolean = false, 
-              by:Option[String] = None, 
+  private def makeSortArgs(key:String,
+              limit:Option[(Int, Int)] = None,
+              desc:Boolean = false,
+              alpha:Boolean = false,
+              by:Option[String] = None,
               get:List[String] = Nil): List[Any] = {
     List(List(key), limit.map(l => List("LIMIT", l._1, l._2)).getOrElse(Nil)
       , (if (desc) List("DESC") else Nil)
@@ -33,7 +33,7 @@ trait Operations { self: Redis =>
   // SORT with STORE
   // sort keys in a set, and store result in the supplied key
   def sortNStore[A](key:String, 
-              limit:Option[Pair[Int, Int]] = None, 
+              limit:Option[(Int, Int)] = None,
               desc:Boolean = false, 
               alpha:Boolean = false, 
               by:Option[String] = None, 

@@ -38,8 +38,8 @@ class SetOperationsSpec extends FunSpec
     }
     it("should fail if the key points to a non-set") {
       r.lpush("list-1", "foo") should equal(Some(1))
-      val thrown = evaluating { r.sadd("list-1", "foo") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.sadd("list-1", "foo") }
+      thrown.getMessage should equal("WRONGTYPE Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -64,8 +64,8 @@ class SetOperationsSpec extends FunSpec
     }
     it("should fail if the key points to a non-set") {
       r.lpush("list-1", "foo") should equal(Some(1))
-      val thrown = evaluating { r.srem("list-1", "foo") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.srem("list-1", "foo") }
+      thrown.getMessage should equal("WRONGTYPE Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -115,8 +115,8 @@ class SetOperationsSpec extends FunSpec
       r.lpush("list-1", "bar") should equal(Some(2))
       r.lpush("list-1", "baz") should equal(Some(3))
       r.sadd("set-1", "foo").get should equal(1)
-      val thrown = evaluating { r.smove("list-1", "set-1", "bat") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.smove("list-1", "set-1", "bat") }
+      thrown.getMessage should equal("WRONGTYPE Operation against a key holding the wrong kind of value")
     }
   }
 

@@ -63,7 +63,7 @@ class OperationsSpec extends FunSpec
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
       r.rename("anshin-2", "anshin-2-new") should equal(true)
-      val thrown = evaluating { r.rename("anshin-2", "anshin-2-new") } should produce[Exception]
+      val thrown = the [Exception] thrownBy { r.rename("anshin-2", "anshin-2-new") }
       thrown.getMessage should equal ("ERR no such key")
     }
   }
@@ -146,7 +146,7 @@ class OperationsSpec extends FunSpec
       r.sadd("alltest", 2)
       r.sadd("alltest", 3)
       r.sort("alltest").getOrElse(Nil) should equal(List(Some("1"), Some("2"), Some("3")))
-      r.sort("alltest", Some(Pair(0, 1))).getOrElse(Nil) should equal(List(Some("1")))
+      r.sort("alltest", Some((0, 1))).getOrElse(Nil) should equal(List(Some("1")))
       r.sort("alltest", None, true).getOrElse(Nil) should equal(List(Some("3"), Some("2"), Some("1")))
       r.sort("alltest", None, false, false, Some("hash-*->order")).getOrElse(Nil) should equal(List(Some("2"), Some("3"), Some("1")))
       r.sort("alltest", None, false, false, None, List("hash-*->description")).getOrElse(Nil) should equal(List(Some("one"), Some("two"), Some("three")))
