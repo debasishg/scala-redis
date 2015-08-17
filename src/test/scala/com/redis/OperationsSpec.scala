@@ -189,4 +189,15 @@ class OperationsSpec extends FunSpec
       r.setConfig("loglevel", "debug").get should equal("OK")
     }
   }
+
+  describe("select") {
+    it("should keep selected database when reconnect") {
+      val key = new scala.util.Random().nextString(10)
+      r.select(1)
+      r.set(key, "debasish")
+      r.get(key) should equal(Some("debasish"))
+      r.reconnect
+      r.get(key) should equal(Some("debasish"))
+    }
+  }
 }

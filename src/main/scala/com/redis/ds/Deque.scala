@@ -84,6 +84,6 @@ class RedisDequeClient(val h: String, val p: Int, val d: Int = 0, val s: Option[
       val key = k
       override val database = d
       override val secret = s
-      initialize
+      initialize(database)
     }
 }
