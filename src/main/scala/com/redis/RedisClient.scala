@@ -47,10 +47,10 @@ trait Redis extends IO with Protocol {
     in.iterator.flatMap(x => Iterator(x._1, x._2)).toList
 
   def reconnect: Boolean = {
-    disconnect && initialize
+    disconnect && initialize(db)
   }
   
-  protected def initialize : Boolean
+  protected def initialize(db: Int) : Boolean
 }
 
 trait RedisCommand extends Redis with Operations
@@ -67,9 +67,9 @@ trait RedisCommand extends Redis with Operations
   val database: Int = 0
   val secret: Option[Any] = None
   
-  override def initialize : Boolean = {
+  override def initialize(db: Int) : Boolean = {
     if(connect) {
-      selectDatabase
+      selectDatabase(db)
       secret.foreach {s => 
         auth(s)
       }
@@ -79,9 +79,9 @@ trait RedisCommand extends Redis with Operations
     }
   }
   
-  private def selectDatabase {
-    if (database != 0)
-      select(database)
+  private def selectDatabase(db: Int) {
+    if (db != 0)
+      select(db)
   }
 
   private def authenticate {
@@ -95,7 +95,7 @@ class RedisClient(override val host: String, override val port: Int,
     override val database: Int = 0, override val secret: Option[Any] = None, override val timeout : Int = 0)
   extends RedisCommand with PubSub {
 
-  initialize
+  initialize(database)
 
   def this() = this("localhost", 6379)
   override def toString = host + ":" + String.valueOf(port)
@@ -202,6 +202,6 @@ class RedisClient(override val host: String, override val port: Int,
     override def write(data: Array[Byte]) = parent.write(data)
     override def readLine = parent.readLine
     override def readCounted(count: Int) = parent.readCounted(count)
-    override def initialize = parent.initialize
+    override def initialize(db: Int) = parent.initialize(db)
   }
 }
