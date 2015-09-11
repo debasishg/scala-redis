@@ -2,6 +2,7 @@ package com.redis
 
 import java.io._
 import java.net.Socket
+import org.newsclub.net.unix._
 
 import com.redis.serialization.Parse.parseStringSafe
 
@@ -16,13 +17,22 @@ trait IO extends Log {
   var db: Int = _
 
   def connected = {
-    socket != null && socket.isBound() && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown();
+    // there's a good chance i am missing something here:
+    val isBound = if(socket.isInstanceOf[AFUNIXSocket]) { true } else { socket.isBound() }
+    
+    socket != null && isBound && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown()
   }
 
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {
     try {
-      socket = new Socket(host, port)
+      if(port == -1) {    // unix socket
+        val socketFile = new File(host)
+        socket = AFUNIXSocket.newInstance()
+        socket.connect(new AFUNIXSocketAddress(socketFile))
+      }else {
+        socket = new Socket(host, port)
+      }
 
       socket.setSoTimeout(timeout)
       socket.setKeepAlive(true)
