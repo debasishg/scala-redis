@@ -1,5 +1,9 @@
 package com.redis
 
+import scala.concurrent._
+import scala.concurrent.duration._
+import ExecutionContext.Implicits.global
+
 object Bench {
   object Values {
     val values = Iterator.continually("foo")
@@ -31,8 +35,8 @@ object Bench {
 
   def load(opsPerClient: Int, fn: (Int, String) => Unit)(implicit clients: RedisClientPool): (Double, Double, Seq[_]) = {
     val start = System.nanoTime
-    val tasks = (1 to 100) map (i => actors.Futures.future { fn(opsPerClient, "k" + i.toString) })
-    val results = tasks map (future => future.apply())
+    val tasks = (1 to 100) map (i => Future { fn(opsPerClient, "k" + i.toString) })
+    val results = Await.result(Future.sequence(tasks), 20 seconds)
     val elapsedSeconds = (System.nanoTime - start)/1000000000.0 
     val opsPerSec = (opsPerClient * 100 * 2) / elapsedSeconds
     (elapsedSeconds, opsPerSec, results)

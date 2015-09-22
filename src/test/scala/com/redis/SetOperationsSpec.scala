@@ -1,16 +1,16 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 
 @RunWith(classOf[JUnitRunner])
-class SetOperationsSpec extends Spec 
-                        with ShouldMatchers
+class SetOperationsSpec extends FunSpec 
+                        with Matchers
                         with BeforeAndAfterEach
                         with BeforeAndAfterAll {
 
@@ -38,8 +38,8 @@ class SetOperationsSpec extends Spec
     }
     it("should fail if the key points to a non-set") {
       r.lpush("list-1", "foo") should equal(Some(1))
-      val thrown = evaluating { r.sadd("list-1", "foo") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.sadd("list-1", "foo") }
+      thrown.getMessage should include ("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -64,8 +64,8 @@ class SetOperationsSpec extends Spec
     }
     it("should fail if the key points to a non-set") {
       r.lpush("list-1", "foo") should equal(Some(1))
-      val thrown = evaluating { r.srem("list-1", "foo") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.srem("list-1", "foo") }
+      thrown.getMessage should include ("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -115,8 +115,8 @@ class SetOperationsSpec extends Spec
       r.lpush("list-1", "bar") should equal(Some(2))
       r.lpush("list-1", "baz") should equal(Some(3))
       r.sadd("set-1", "foo").get should equal(1)
-      val thrown = evaluating { r.smove("list-1", "set-1", "bat") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.smove("list-1", "set-1", "bat") }
+      thrown.getMessage should include ("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -301,6 +301,31 @@ class SetOperationsSpec extends Spec
     }
     it("should return None for a non-existing key") {
       r.srandmember("set-1") should equal(None)
+    }
+  }
+
+  describe("srandmember with count") {
+    it("should return a list of random members") {
+      r.sadd("set-1", "one").get should equal(1)
+      r.sadd("set-1", "two").get should equal(1)
+      r.sadd("set-1", "three").get should equal(1)
+      r.sadd("set-1", "four").get should equal(1)
+      r.sadd("set-1", "five").get should equal(1)
+      r.sadd("set-1", "six").get should equal(1)
+      r.sadd("set-1", "seven").get should equal(1)
+      r.sadd("set-1", "eight").get should equal(1)
+
+      r.srandmember("set-1", 2).get.size should equal(2)
+
+      // returned elements should be unique
+      val l = r.srandmember("set-1", 4).get
+      l.size should equal(l.toSet.size)
+
+      // returned elements may have duplicates
+      r.srandmember("set-1", -4).get.toSet.size should (be <= (4))
+
+      // if supplied count > size, then whole set is returned
+      r.srandmember("set-1", 24).get.toSet.size should equal(8)
     }
   }
 }

@@ -1,45 +1,66 @@
 package com.redis.cluster
 
 import java.util.zip.CRC32
-import scala.collection.immutable.TreeSet
-import scala.collection.mutable.{ArrayBuffer, Map, ListBuffer}
+import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ArrayBuffer
 
+/**
+ * Consistent Hashing node ring abstraction.
+ */
 case class HashRing[T](nodes: List[T], replicas: Int) {
-  var sortedKeys = new TreeSet[Long]
+
   val cluster = new ArrayBuffer[T]
-  var ring = Map[Long, T]()
+  private var ring = TreeMap[Long, T]()
 
   nodes.foreach(addNode(_))
 
-  // adds a node to the hash ring (including a number of replicas)
+  /*
+   * Adds a node to the hash ring (including a number of replicas)
+   */
   def addNode(node: T) = {
     cluster += node
     (1 to replicas).foreach {replica =>
-      val key = calculateChecksum((node + ":" + replica).getBytes("UTF-8"))
-      ring += (key -> node)
-      sortedKeys = sortedKeys + key
+      ring += (nodeHashFor(node, replica) -> node)
     }
   }
 
-  // remove node from the ring
+  def replaceNode(node: T): Option[T] = {
+    var replacedNode: Option[T] = None
+    for (i <- 0 until cluster.size){
+      if (cluster(i).toString().equals(node.toString)){
+        replacedNode = Some(cluster(i))
+        cluster(i) = node
+      }
+    }
+    (1 to replicas).foreach {replica =>
+      ring += (nodeHashFor(node, replica) -> node)
+    }
+    replacedNode
+  }
+
+  /*
+   * Removes node from the ring
+   */
   def removeNode(node: T) {
     cluster -= node
     (1 to replicas).foreach {replica =>
-      val key = calculateChecksum((node + ":" + replica).getBytes("UTF-8"))
-      ring -= key
-      sortedKeys = sortedKeys - key
+      ring -= nodeHashFor(node, replica)
     }
   }
 
-  // get node for the key
+  /**
+   * Get the node responsible for the data key.
+   * Can only be used if nodes exists in the ring, 
+   * otherwise throws `IllegalStateException`
+   */
   def getNode(key: Seq[Byte]): T = {
+    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty ring" format key)
     val crc = calculateChecksum(key)
-    if (sortedKeys contains crc) ring(crc)
-    else {
-      if (crc < sortedKeys.firstKey) ring(sortedKeys.firstKey)
-      else if (crc > sortedKeys.lastKey) ring(sortedKeys.lastKey)
-      else ring(sortedKeys.rangeImpl(None, Some(crc)).lastKey)
+    def nextClockwise: T = {
+      val (ringKey, node) = ring.rangeImpl(Some(crc), None).headOption.getOrElse(ring.head)
+      node
     }
+    ring.getOrElse(crc, nextClockwise)
   }
 
   // Computes the CRC-32 of the given String
@@ -48,5 +69,15 @@ case class HashRing[T](nodes: List[T], replicas: Int) {
     checksum.update(value.toArray)
     checksum.getValue
   }
+
+  /**
+   * Is the ring empty, i.e. no nodes added or all removed.
+   */
+  def isEmpty: Boolean = ring.isEmpty
+
+  private def nodeHashFor(node: T, replica: Int): Long = {
+    calculateChecksum((node + ":" + replica).getBytes("UTF-8"))
+  }
+
 }
 

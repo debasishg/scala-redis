@@ -1,6 +1,8 @@
 package com.redis
 
-import serialization.Format
+import java.net.SocketException
+
+import com.redis.serialization.Format
 
 object RedisClient {
   trait SortOrder
@@ -22,13 +24,19 @@ trait Redis extends IO with Protocol {
     case e: RedisConnectionException =>
       if (reconnect) send(command, args)(result)
       else throw e
+    case e: SocketException =>
+      if (reconnect) send(command, args)(result)
+      else throw e
   }
-
+  
   def send[A](command: String)(result: => A): A = try {
     write(Commands.multiBulk(List(command.getBytes("UTF-8"))))
     result
   } catch {
     case e: RedisConnectionException =>
+      if (reconnect) send(command)(result)
+      else throw e
+    case e: SocketException =>
       if (reconnect) send(command)(result)
       else throw e
   }
@@ -37,10 +45,15 @@ trait Redis extends IO with Protocol {
 
   protected def flattenPairs(in: Iterable[Product2[Any, Any]]): List[Any] =
     in.iterator.flatMap(x => Iterator(x._1, x._2)).toList
+
+  def reconnect: Boolean = {
+    disconnect && initialize
+  }
+  
+  protected def initialize : Boolean
 }
 
-trait RedisCommand extends Redis
-  with Operations 
+trait RedisCommand extends Redis with Operations
   with NodeOperations 
   with StringOperations
   with ListOperations
@@ -48,12 +61,41 @@ trait RedisCommand extends Redis
   with SortedSetOperations
   with HashOperations
   with EvalOperations
+  with PubOperations
+  with HyperLogLogOperations {
+
+  val database: Int = 0
+  val secret: Option[Any] = None
+  
+  override def initialize : Boolean = {
+    if(connect) {
+      secret.foreach {s => 
+        auth(s)
+      }
+      selectDatabase
+      true
+    } else {
+      false
+    }
+  }
+  
+  private def selectDatabase {
+    if (database != 0)
+      select(database)
+  }
+
+  private def authenticate {
+    secret.foreach(auth _)
+  }
+  
+}
   
 
-class RedisClient(override val host: String, override val port: Int)
+class RedisClient(override val host: String, override val port: Int,
+    override val database: Int = 0, override val secret: Option[Any] = None, override val timeout : Int = 0)
   extends RedisCommand with PubSub {
 
-  connect
+  initialize
 
   def this() = this("localhost", 6379)
   override def toString = host + ":" + String.valueOf(port)
@@ -62,17 +104,73 @@ class RedisClient(override val host: String, override val port: Int)
     send("MULTI")(asString) // flush reply stream
     try {
       val pipelineClient = new PipelineClient(this)
-      f(pipelineClient)
+      try {
+        f(pipelineClient)
+      } catch {
+        case e: Exception =>
+          send("DISCARD")(asString)
+          throw e
+      }
       send("EXEC")(asExec(pipelineClient.handlers))
     } catch {
       case e: RedisMultiExecException => 
-        send("DISCARD")(asString)
         None
     }
   }
+  
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.concurrent.{Future, Promise}
+  import scala.util.Try
 
-  class PipelineClient(parent: RedisClient) extends RedisCommand {
-    import serialization.Parse
+  /**
+   * Redis pipelining API without the transaction semantics. The implementation has a non-blocking
+   * semantics and returns a <tt>List</tt> of <tt>Promise</tt>. The caller may use <tt>Future.firstCompletedOf</tt> to get the
+   * first completed task before all tasks have been completed.
+   * If an exception is raised in executing any of the commands, then the corresponding <tt>Promise</tt> holds
+   * the exception. Here's a sample usage:
+   * <pre>
+   * val x =
+   *  r.pipelineNoMulti(
+   *    List(
+   *      {() => r.set("key", "debasish")},
+   *      {() => r.get("key")},
+   *      {() => r.get("key1")},
+   *      {() => r.lpush("list", "maulindu")},
+   *      {() => r.lpush("key", "maulindu")}     // should raise an exception
+   *    )
+   *  )
+   * </pre>
+   *
+   * This queues up all commands and does pipelining. The returned r is a <tt>List</tt> of <tt>Promise</tt>. The client
+   * may want to wait for all to complete using:
+   *
+   * <pre>
+   * val result = x.map{a => Await.result(a.future, timeout)}
+   * </pre>
+   *
+   * Or the client may wish to track and get the promises as soon as the underlying <tt>Future</tt> is completed.
+   */
+  def pipelineNoMulti(commands: Seq[() => Any]) = {
+    val ps = List.fill(commands.size)(Promise[Any]())
+    var i = -1
+    val f = Future {
+      commands.map {command =>
+        i = i + 1
+        Try { 
+          command() 
+        } recover {
+          case ex: java.lang.Exception => 
+            ps(i) success ex
+        } foreach {r =>
+          ps(i) success r
+        }
+      }
+    }
+    ps
+  }
+
+  class PipelineClient(parent: RedisClient) extends RedisCommand with PubOperations {
+    import com.redis.serialization.Parse
 
     var handlers: Vector[() => Any] = Vector.empty
 
@@ -91,6 +189,9 @@ class RedisClient(override val host: String, override val port: Int)
 
     val host = parent.host
     val port = parent.port
+    val timeout = parent.timeout
+    override val secret = parent.secret
+    override val database = parent.database
 
     // TODO: Find a better abstraction
     override def connected = parent.connected
@@ -101,5 +202,6 @@ class RedisClient(override val host: String, override val port: Int)
     override def write(data: Array[Byte]) = parent.write(data)
     override def readLine = parent.readLine
     override def readCounted(count: Int) = parent.readCounted(count)
+    override def initialize = parent.initialize
   }
 }

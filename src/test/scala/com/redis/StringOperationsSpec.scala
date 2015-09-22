@@ -1,18 +1,18 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 
 @RunWith(classOf[JUnitRunner])
-class StringOperationsSpec extends Spec 
-                           with ShouldMatchers
-                           with BeforeAndAfterEach
-                           with BeforeAndAfterAll {
+class StringOperationsSpec extends FunSpec
+with Matchers
+with BeforeAndAfterEach
+with BeforeAndAfterAll {
 
   val r = new RedisClient("localhost", 6379)
 
@@ -34,6 +34,59 @@ class StringOperationsSpec extends Spec
     }
   }
 
+  describe("set if not exist") {
+    it("should set key/value pairs with exclusiveness and expire") {
+      r.set("amit-1", "mor", "nx","ex",6)
+      r.get("amit-1") match {
+        case Some(s: String) => s should equal("mor")
+        case None => fail("should return mor")
+      }
+      r.del("amit-1")
+    }
+  }
+
+  describe("set if exists or not") {
+    it("should set key/value pairs with exclusiveness and expire") {
+      r.set("amit-1", "mor", false, Seconds(6))
+      r.get("amit-1") match {
+        case Some(s: String) => s should equal("mor")
+        case None => fail("should return mor")
+      }
+      Thread.sleep(6000)
+      r.get("amit-1") should equal(None)
+      r.del("amit-1")
+    }
+  }
+
+  describe("fail to set if doesn't exist; succeed later because key doesn't exist; success later because key exists") {
+    it("should fail to set key/value pairs with exclusiveness and expire") {
+      r.del("amit-1")
+      // first trying to set with 'xx' should fail since there is not key present
+      // r.set("amit-1", "mor", "xx","ex",6)
+      r.set("amit-1", "mor", true, Seconds(6))
+      r.get("amit-1") match {
+        case Some(s: String) => fail("should return None")
+        case None =>
+      }
+      // second, we set if there is no key and we should succeed
+      // r.set("amit-1", "mor", "nx","ex",6)
+      r.set("amit-1", "mor", false, Seconds(6))
+      r.get("amit-1") match {
+        case Some(s: String) => s should equal("mor")
+        case None => fail("should return mor")
+      }
+
+      // third, since the key is now present (if second succeeded), this would succeed too
+      // r.set("amit-1", "mor", "xx","ex",6)
+      r.set("amit-1", "mor", true, Seconds(6))
+      r.get("amit-1") match {
+        case Some(s: String) => s should equal("mor")
+        case None => fail("should return mor")
+      }
+
+    }
+  }
+
   describe("get") {
     it("should retrieve key/value pairs for existing keys") {
       r.set("anshin-1", "debasish") should equal(true)
@@ -45,7 +98,7 @@ class StringOperationsSpec extends Spec
     it("should fail for non-existent keys") {
       r.get("anshin-2") match {
         case Some(s: String) => fail("should return None")
-        case None => 
+        case None =>
       }
     }
   }
@@ -102,7 +155,7 @@ class StringOperationsSpec extends Spec
       r.set("anshin-2", "debasish") should equal(true)
       try {
         r.incr("anshin-2")
-      } catch { case ex => ex.getMessage should startWith("ERR value is not an integer") }
+      } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not an integer") }
     }
     it("should increment by 5 for a key that contains a number") {
       r.set("anshin-3", "10") should equal(true)
@@ -112,7 +165,19 @@ class StringOperationsSpec extends Spec
       r.set("anshin-4", "debasish") should equal(true)
       try {
         r.incrby("anshin-4", 5)
-      } catch { case ex => ex.getMessage should startWith("ERR value is not an integer") }
+      } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not an integer") }
+    }
+  }
+
+  describe("incrbyfloat") {
+    it("should increment values by floats") {
+      r.set("k1", 10.50f)
+      r.incrbyfloat("k1", 0.1f) should be(Some(10.6f))
+      r.set("k1", 5.0e3f)
+      r.incrbyfloat("k1", 2.0e2f) should be(Some(5200f))
+      r.set("k1", "abc")
+      val thrown = the [Exception] thrownBy { r.incrbyfloat("k1", 2.0e2f) }
+      thrown.getMessage should include("value is not a valid float")
     }
   }
 
@@ -125,7 +190,7 @@ class StringOperationsSpec extends Spec
       r.set("anshin-2", "debasish") should equal(true)
       try {
         r.decr("anshin-2")
-      } catch { case ex => ex.getMessage should startWith("ERR value is not an integer") }
+      } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not an integer") }
     }
     it("should decrement by 5 for a key that contains a number") {
       r.set("anshin-3", "10") should equal(true)
@@ -135,7 +200,7 @@ class StringOperationsSpec extends Spec
       r.set("anshin-4", "debasish") should equal(true)
       try {
         r.decrby("anshin-4", 5)
-      } catch { case ex => ex.getMessage should startWith("ERR value is not an integer") }
+      } catch { case ex: Throwable => ex.getMessage should startWith("ERR value is not an integer") }
     }
   }
 
@@ -156,22 +221,22 @@ class StringOperationsSpec extends Spec
   describe("mset") {
     it("should set all keys irrespective of whether they exist") {
       r.mset(
-        ("anshin-1", "debasish"), 
+        ("anshin-1", "debasish"),
         ("anshin-2", "maulindu"),
         ("anshin-3", "nilanjan")) should equal(true)
     }
 
     it("should set all keys only if none of them exist") {
       r.msetnx(
-        ("anshin-4", "debasish"), 
+        ("anshin-4", "debasish"),
         ("anshin-5", "maulindu"),
         ("anshin-6", "nilanjan")) should equal(true)
       r.msetnx(
-        ("anshin-7", "debasish"), 
+        ("anshin-7", "debasish"),
         ("anshin-8", "maulindu"),
         ("anshin-6", "nilanjan")) should equal(false)
       r.msetnx(
-        ("anshin-4", "debasish"), 
+        ("anshin-4", "debasish"),
         ("anshin-5", "maulindu"),
         ("anshin-6", "nilanjan")) should equal(false)
     }
@@ -256,7 +321,42 @@ class StringOperationsSpec extends Spec
     }
   }
 
-/** uncomment to test timeout : need a custom redis.conf
+  describe("bitcount") {
+    it("should do a population count") {
+      r.setbit("mykey", 7, 1)
+      r.bitcount("mykey") should equal(Some(1))
+      r.setbit("mykey", 8, 1)
+      r.bitcount("mykey") should equal(Some(2))
+    }
+  }
+
+  describe("bitop") {
+    it("should apply logical operators to the srckeys and store the results in destKey") {
+      // key1: 101
+      // key2:  10
+      r.setbit("key1", 0, 1)
+      r.setbit("key1", 2, 1)
+      r.setbit("key2", 1, 1)
+      r.bitop("AND", "destKey", "key1", "key2") should equal(Some(1))
+      // 101 AND 010 = 000
+      (0 to 2).foreach { bit =>
+        r.getbit("destKey", bit) should equal(Some(0))
+      }
+
+      r.bitop("OR", "destKey", "key1", "key2") should equal(Some(1))
+      // 101 OR 010 = 111
+      (0 to 2).foreach { bit =>
+        r.getbit("destKey", bit) should equal(Some(1))
+      }
+
+      r.bitop("NOT", "destKey", "key1") should equal(Some(1))
+      r.getbit("destKey", 0) should equal(Some(0))
+      r.getbit("destKey", 1) should equal(Some(1))
+      r.getbit("destKey", 2) should equal(Some(0))
+    }
+  }
+
+  /** uncomment to test timeout : need a custom redis.conf
   describe("timeout") {
     it("should append value to that of a key") {
       r.set("mykey", "Hello World")
@@ -267,5 +367,5 @@ class StringOperationsSpec extends Spec
       r.strlen("nonexisting") should equal(Some(11))
     }
   }
-**/
+    **/
 }

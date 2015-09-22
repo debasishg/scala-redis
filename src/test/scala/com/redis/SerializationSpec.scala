@@ -1,17 +1,17 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 import serialization._
 
 @RunWith(classOf[JUnitRunner])
-class SerializationSpec extends Spec 
-                     with ShouldMatchers
+class SerializationSpec extends FunSpec 
+                     with Matchers
                      with BeforeAndAfterEach
                      with BeforeAndAfterAll {
 

@@ -2,10 +2,10 @@ package com.redis.ds
 
 trait Deque[A] {
   // inserts at the head
-  def addFirst(a: A): Option[Int]
+  def addFirst(a: A): Option[Long]
 
   // inserts at the tail 
-  def addLast(a: A): Option[Int]
+  def addLast(a: A): Option[Long]
 
   // clears the deque
   def clear: Boolean
@@ -29,20 +29,20 @@ trait Deque[A] {
   def pollLast: Option[A]
 
   // size of the deque
-  def size: Int
+  def size: Long
 }
 
 import com.redis.ListOperations
+import com.redis.serialization.Parse.Implicits._
 import com.redis.serialization._
-import Parse.Implicits._
 
 abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: Int = 0)(implicit private val format: Format, private val parse: Parse[A])
   extends Deque[A] { self: ListOperations =>
 
   val key: String
 
-  def addFirst(a: A): Option[Int] = lpush(key, a) 
-  def addLast(a: A): Option[Int] = rpush(key, a)
+  def addFirst(a: A): Option[Long] = lpush(key, a) 
+  def addLast(a: A): Option[Long] = rpush(key, a)
 
   def peekFirst: Option[A] = lrange[A](key, 0, 0).map(_.head.get) 
 
@@ -60,7 +60,7 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
       brpop[String, A](timeoutInSecs, key).map(_._2)
     } else rpop[A](key) 
 
-  def size: Int = llen(key) getOrElse(0)
+  def size: Long = llen(key) getOrElse(0l)
 
   def isEmpty: Boolean = size == 0
 
@@ -73,14 +73,17 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
   }
 }
 
-import com.redis.{Redis, ListOperations}
+import com.redis.RedisCommand
 
-class RedisDequeClient(val h: String, val p: Int) {
+class RedisDequeClient(val h: String, val p: Int, val d: Int = 0, val s: Option[Any] = None, val t : Int =0) {
   def getDeque[A](k: String, blocking: Boolean = false, timeoutInSecs: Int = 0)(implicit format: Format, parse: Parse[A]) =
-    new RedisDeque(blocking, timeoutInSecs)(format, parse) with ListOperations with Redis {
+    new RedisDeque(blocking, timeoutInSecs)(format, parse) with RedisCommand {
       val host = h
       val port = p
+      val timeout = t
       val key = k
-      connect
+      override val database = d
+      override val secret = s
+      initialize
     }
 }

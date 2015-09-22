@@ -1,16 +1,16 @@
 package com.redis.ds
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 
 @RunWith(classOf[JUnitRunner])
-class BlockingDequeSpec extends Spec 
-                with ShouldMatchers
+class BlockingDequeSpec extends FunSpec 
+                with Matchers
                 with BeforeAndAfterEach
                 with BeforeAndAfterAll {
 

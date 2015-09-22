@@ -1,13 +1,14 @@
 package com.redis
 
 import java.io._
-import java.net.{Socket, InetSocketAddress}
+import java.net.Socket
 
-import serialization.Parse.parseStringSafe
+import com.redis.serialization.Parse.parseStringSafe
 
 trait IO extends Log {
   val host: String
   val port: Int
+  val timeout: Int
 
   var socket: Socket = _
   var out: OutputStream = _
@@ -17,16 +18,13 @@ trait IO extends Log {
   def connected = {
     socket != null && socket.isBound() && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown();
   }
-  def reconnect = {
-    disconnect && connect
-  }
 
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {
     try {
       socket = new Socket(host, port)
 
-      socket.setSoTimeout(0)
+      socket.setSoTimeout(timeout)
       socket.setKeepAlive(true)
       socket.setTcpNoDelay(true)
 
@@ -34,7 +32,7 @@ trait IO extends Log {
       in = new BufferedInputStream(socket.getInputStream)
       true
     } catch {
-      case x =>
+      case x: Throwable =>
         clearFd
         throw new RuntimeException(x)
     }
@@ -49,7 +47,7 @@ trait IO extends Log {
       clearFd
       true
     } catch {
-      case x =>
+      case x: Throwable =>
         false
     }
   }
@@ -72,7 +70,7 @@ trait IO extends Log {
         os.write(data)
         os.flush
       } catch {
-        case x => reconnect;
+        case x: Throwable => throw new RedisConnectionException("connection is closed. write error")
       }
     }
   }

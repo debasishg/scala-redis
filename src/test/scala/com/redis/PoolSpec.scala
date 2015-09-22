@@ -1,18 +1,19 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
-import scala.actors._
-import scala.actors.Actor._
+import scala.concurrent._
+import scala.concurrent.duration._
+import ExecutionContext.Implicits.global
 
 @RunWith(classOf[JUnitRunner])
-class PoolSpec extends Spec 
-               with ShouldMatchers
+class PoolSpec extends FunSpec 
+               with Matchers
                with BeforeAndAfterEach
                with BeforeAndAfterAll {
 
@@ -56,7 +57,7 @@ class PoolSpec extends Spec
           client.set("key-%d".format(i), v)
           i += 1
         }
-        Some(1000)
+        Some(1000L)
       }
     }
   }
@@ -64,9 +65,9 @@ class PoolSpec extends Spec
   describe("pool test") {
     it("should distribute work amongst the clients") {
       val l = (0 until 5000).map(_.toString).toList
-      val fns = List[List[String] => Option[Int]](lp, rp, set)
-      val tasks = fns map (fn => scala.actors.Futures.future { fn(l) })
-      val results = tasks map (future => future.apply())
+      val fns = List[List[String] => Option[Long]](lp, rp, set)
+      val tasks = fns map (fn => Future { fn(l) })
+      val results = Await.result(Future.sequence(tasks), 20 seconds)
       results should equal(List(Some(5000), Some(5000), Some(1000)))
     }
   }
@@ -74,7 +75,7 @@ class PoolSpec extends Spec
   def leftp(msgs: List[String]) = {
     clients.withClient {
       client => {
-        val ln = new util.Random().nextString(10)
+        val ln = new scala.util.Random().nextString(10)
         msgs.foreach(client.lpush(ln, _))
         val len = client.llen(ln)
 println(len)

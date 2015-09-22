@@ -40,13 +40,18 @@ private [redis] trait Reply {
   type Reply[T] = PartialFunction[(Char, Array[Byte]), T]
   type SingleReply = Reply[Option[Array[Byte]]]
   type MultiReply = Reply[Option[List[Option[Array[Byte]]]]]
+  type PairReply = Reply[Option[(Option[Array[Byte]], Option[List[Option[Array[Byte]]]])]]
 
   def readLine: Array[Byte]
   def readCounted(c: Int): Array[Byte]
-  def reconnect: Boolean
 
   val integerReply: Reply[Option[Int]] = {
     case (INT, s) => Some(Parsers.parseInt(s))
+    case (BULK, s) if Parsers.parseInt(s) == -1 => None
+  }
+
+  val longReply: Reply[Option[Long]] = {
+    case (INT, s) => Some(Parsers.parseLong(s))
     case (BULK, s) if Parsers.parseInt(s) == -1 => None
   }
 
@@ -75,6 +80,16 @@ private [redis] trait Reply {
       }
   }
 
+  val pairBulkReply: PairReply = {
+    case (MULTI, str) => {
+      Parsers.parseInt(str) match {
+        case 2 => Some((receive(bulkReply orElse singleLineReply), 
+          receive(multiBulkReply)))
+        case _ => None
+      }
+    }
+  }
+
   def execReply(handlers: Seq[() => Any]): PartialFunction[(Char, Array[Byte]), Option[List[Any]]] = {
     case (MULTI, str) =>
       Parsers.parseInt(str) match {
@@ -86,13 +101,17 @@ private [redis] trait Reply {
   }
 
   val errReply: Reply[Nothing] = {
-    case (ERR, s) => reconnect; throw new Exception(Parsers.parseString(s))
-    case x => reconnect; throw new Exception("Protocol error: Got " + x + " as initial reply byte")
+    case (ERR, s) => throw new Exception(Parsers.parseString(s))
+    case x => throw new Exception("Protocol error: Got " + x + " as initial reply byte")
   }
 
   def queuedReplyInt: Reply[Option[Int]] = {
     case (SINGLE, QUEUED) => Some(Int.MaxValue)
   }
+  
+  def queuedReplyLong: Reply[Option[Long]] = {
+    case (SINGLE, QUEUED) => Some(Long.MaxValue)
+    }
 
   def queuedReplyList: MultiReply = {
     case (SINGLE, QUEUED) => Some(List(Some(QUEUED)))
@@ -112,11 +131,12 @@ private [redis] trait R extends Reply {
   def asBulk[T](implicit parse: Parse[T]): Option[T] =  receive(bulkReply) map parse
   
   def asBulkWithTime[T](implicit parse: Parse[T]): Option[T] = receive(bulkReply orElse multiBulkReply) match {
-    case x: Some[Array[Byte]] => x.map(parse(_))
+    case Some(bytes: Array[Byte]) => Some(parse(bytes))
     case _ => None
   }
 
   def asInt: Option[Int] =  receive(integerReply orElse queuedReplyInt)
+  def asLong: Option[Long] =  receive(longReply orElse queuedReplyLong)
 
   def asBoolean: Boolean = receive(integerReply orElse singleLineReply) match {
     case Some(n: Int) => n > 0
@@ -141,6 +161,11 @@ private [redis] trait R extends Reply {
   def asExec(handlers: Seq[() => Any]): Option[List[Any]] = receive(execReply(handlers))
 
   def asSet[T: Parse]: Option[Set[Option[T]]] = asList map (_.toSet)
+
+  def asPair[T](implicit parse: Parse[T]): Option[(Option[Int], Option[List[Option[T]]])] = receive(pairBulkReply) match {
+    case Some((single, multi)) => Some(((single map Parsers.parseInt), multi.map(_.map(_.map(parse)))))
+    case _ => None
+  }
 
   def asAny = receive(integerReply orElse singleLineReply orElse bulkReply orElse multiBulkReply)
 }

@@ -1,16 +1,16 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 
 @RunWith(classOf[JUnitRunner])
-class ListOperationsSpec extends Spec 
-                         with ShouldMatchers
+class ListOperationsSpec extends FunSpec 
+                         with Matchers
                          with BeforeAndAfterEach
                          with BeforeAndAfterAll {
 
@@ -34,8 +34,8 @@ class ListOperationsSpec extends Spec
     }
     it("should throw if the key has a non-list value") {
       r.set("anshin-1", "debasish") should equal(true)
-      val thrown = evaluating { r.lpush("anshin-1", "bar") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.lpush("anshin-1", "bar") }
+      thrown.getMessage should include("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -47,15 +47,27 @@ class ListOperationsSpec extends Spec
     }
   }
 
+  describe("lpushx") {
+    it("should add to the tail of the list") {
+      r.lpush("list-1", "foo") should equal(Some(1))
+      r.lpushx("list-1", "bar") should equal(Some(2))
+    }
+    it("should throw if the key has a non-list value") {
+      r.set("anshin-1", "debasish") should equal(true)
+      val thrown = the [Exception] thrownBy { r.lpushx("anshin-1", "bar") }
+      thrown.getMessage should include("Operation against a key holding the wrong kind of value")
+    }
+  }
+
   describe("rpush") {
-    it("should add to the head of the list") {
+    it("should add to the tail of the list") {
       r.rpush("list-1", "foo") should equal(Some(1))
       r.rpush("list-1", "bar") should equal(Some(2))
     }
     it("should throw if the key has a non-list value") {
       r.set("anshin-1", "debasish") should equal(true)
-      val thrown = evaluating { r.rpush("anshin-1", "bar") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.rpush("anshin-1", "bar") }
+      thrown.getMessage should include("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -64,6 +76,18 @@ class ListOperationsSpec extends Spec
       r.rpush("list-1", "foo", "bar", "baz") should equal(Some(3))
       r.rpush("list-1", "bag", "fog") should equal(Some(5))
       r.rpush("list-1", "bag", "fog") should equal(Some(7))
+    }
+  }
+
+  describe("rpushx") {
+    it("should add to the tail of the list") {
+      r.rpush("list-1", "foo") should equal(Some(1))
+      r.rpushx("list-1", "bar") should equal(Some(2))
+    }
+    it("should throw if the key has a non-list value") {
+      r.set("anshin-1", "debasish") should equal(true)
+      val thrown = the [Exception] thrownBy { r.rpushx("anshin-1", "bar") }
+      thrown.getMessage should include("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -78,8 +102,8 @@ class ListOperationsSpec extends Spec
     }
     it("should throw for a non-list key") {
       r.set("anshin-1", "debasish") should equal(true)
-      val thrown = evaluating { r.llen("anshin-1") } should produce [Exception]
-      thrown.getMessage should equal("ERR Operation against a key holding the wrong kind of value")
+      val thrown = the [Exception] thrownBy { r.llen("anshin-1") }
+      thrown.getMessage should include("Operation against a key holding the wrong kind of value")
     }
   }
 
@@ -174,8 +198,8 @@ class ListOperationsSpec extends Spec
       r.lpush("list-1", "6") should equal(Some(1))
       r.lpush("list-1", "5") should equal(Some(2))
       r.lpush("list-1", "4") should equal(Some(3))
-      val thrown = evaluating { r.lset("list-1", 12, "30") } should produce [Exception]
-      thrown.getMessage should equal("ERR index out of range")
+      val thrown = the [Exception] thrownBy { r.lset("list-1", 12, "30") }
+      thrown.getMessage should include("index out of range")
     }
   }
 

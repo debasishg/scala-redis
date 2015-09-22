@@ -1,16 +1,16 @@
 package com.redis
 
-import org.scalatest.Spec
+import org.scalatest.FunSpec
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import org.scalatest.junit.JUnitRunner
 import org.junit.runner.RunWith
 
 
 @RunWith(classOf[JUnitRunner])
-class OperationsSpec extends Spec 
-                     with ShouldMatchers
+class OperationsSpec extends FunSpec 
+                     with Matchers
                      with BeforeAndAfterEach
                      with BeforeAndAfterAll {
 
@@ -51,7 +51,7 @@ class OperationsSpec extends Spec
     it("should give") {
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
-      r.randkey match {
+      r.randomkey match {
         case Some(s: String) => s should startWith("anshin") 
         case None => fail("should have 2 elements")
       }
@@ -63,7 +63,7 @@ class OperationsSpec extends Spec
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
       r.rename("anshin-2", "anshin-2-new") should equal(true)
-      val thrown = evaluating { r.rename("anshin-2", "anshin-2-new") } should produce[Exception]
+      val thrown = the [Exception] thrownBy { r.rename("anshin-2", "anshin-2-new") }
       thrown.getMessage should equal ("ERR no such key")
     }
   }
@@ -119,8 +119,20 @@ class OperationsSpec extends Spec
       r.expire("anshin-3", 1000) should equal(false)
     }
   }
+  describe("persist") {
+    it("should give") {
+      r.set("key-2", "maulindu")
+      r.expire("key-2", 1000) should equal(true)
+      r.ttl("key-2") should equal(Some(1000))
+      r.persist("key-2") should equal(true)
+      r.ttl("key-2") should equal(Some(-1))
+      r.persist("key-3") should equal(false)
+    }
+  }
+
   describe("sort") {
     it("should give") {
+// sort[A](key:String, limit:Option[Pair[Int, Int]] = None, desc:Boolean = false, alpha:Boolean = false, by:Option[String] = None, get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
       r.hset("hash-1", "description", "one")
       r.hset("hash-1", "order", "100")
       r.hset("hash-2", "description", "two")
@@ -131,11 +143,47 @@ class OperationsSpec extends Spec
       r.sadd("alltest", 2)
       r.sadd("alltest", 3)
       r.sort("alltest").getOrElse(Nil) should equal(List(Some("1"), Some("2"), Some("3")))
-      r.sort("alltest", Some(Pair(0, 1))).getOrElse(Nil) should equal(List(Some("1")))
+      r.sort("alltest", Some((0, 1))).getOrElse(Nil) should equal(List(Some("1")))
       r.sort("alltest", None, true).getOrElse(Nil) should equal(List(Some("3"), Some("2"), Some("1")))
       r.sort("alltest", None, false, false, Some("hash-*->order")).getOrElse(Nil) should equal(List(Some("2"), Some("3"), Some("1")))
       r.sort("alltest", None, false, false, None, List("hash-*->description")).getOrElse(Nil) should equal(List(Some("one"), Some("two"), Some("three")))
       r.sort("alltest", None, false, false, None, List("hash-*->description", "hash-*->order")).getOrElse(Nil) should equal(List(Some("one"), Some("100"), Some("two"), Some("25"), Some("three"), Some("50")))
+    }
+  }
+  import serialization._
+  describe("sortNStore") {
+    it("should give") {
+      r.sadd("alltest", 10)
+      r.sadd("alltest", 30)
+      r.sadd("alltest", 3)
+      r.sadd("alltest", 1)
+
+      // default serialization : return String
+      r.sortNStore("alltest", storeAt = "skey").getOrElse(-1) should equal(4)
+      r.lrange("skey", 0, 10).get should equal(List(Some("1"), Some("3"), Some("10"), Some("30")))
+
+      // Long serialization : return Long
+      implicit val parseLong = Parse[Long](new String(_).toLong)
+      r.sortNStore[Long]("alltest", storeAt = "skey").getOrElse(-1) should equal(4)
+      r.lrange("skey", 0, 10).get should equal(List(Some(1), Some(3), Some(10), Some(30)))
+    }
+  }
+
+  describe("ping") {
+    it("should return pong") {
+      r.ping.get should equal("PONG")
+    }
+  }
+
+  describe("getConfig") {
+    it("should return port") {
+      r.getConfig("port").get should equal(Map("port" -> Some("6379")))
+    }
+  }
+
+  describe("setConfig") {
+    it("should set config") {
+      r.setConfig("loglevel", "debug").get should equal("OK")
     }
   }
 }
