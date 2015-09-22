@@ -8,7 +8,25 @@ trait SortedSetOperations { self: Redis =>
   // Add the specified members having the specified score to the sorted set stored at key.
   def zadd(key: Any, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Int] =
     send("ZADD", List(key, score, member) ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asInt)
-  
+
+  // ZADD (Variadic: >= 2.4)
+  // options >= 3.0.2 ZADD key [NX|XX] [CH] [INCR]
+  // Add the specified members having the specified score to the sorted set stored at key.
+  def zadd(key: Any, onlyUpdate:Boolean, onlyAdd:Boolean, changed:Boolean, increment:Boolean, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Int] = {
+
+    val commands: List[Any] = {
+      List(List(key)
+        , if (onlyUpdate) List("XX") else Nil
+        , if (onlyAdd) List("NX") else Nil
+        , if (changed) List("CH") else Nil
+        , if (increment) List("INCR") else Nil
+        , List(score)
+        , List(member)
+      ).flatten
+    }
+    send("ZADD", commands ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asInt)
+  }
+
   // ZREM (Variadic: >= 2.4)
   // Remove the specified members from the sorted set value stored at key.
   def zrem(key: Any, member: Any, members: Any*)(implicit format: Format): Option[Int] =

@@ -41,6 +41,12 @@ class SortedSetOperationsSpec extends Spec
       zadd("hackers", 1912, "alan turing") should equal(Some(0))
       zcard("hackers").get should equal(6)
     }
+    it("should honour the increment parameter") {
+      add
+      zadd("hackers", false, false, true, 1000, "yukihiro matsumoto") should equal(Some(1))
+      zcard("hackers").get should equal(6)
+      zscore("hackers", "yukihiro matsumoto").get should equal(2965)
+    }
   }
 
   describe("zrem") {
