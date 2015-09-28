@@ -91,14 +91,19 @@ trait RedisCommand extends Redis with Operations
 }
   
 
-class RedisClient(override val host: String, override val port: Int,
+class RedisClient(override val host: String, override val port: Option[Int],
     override val database: Int = 0, override val secret: Option[Any] = None, override val timeout : Int = 0)
   extends RedisCommand with PubSub {
 
   initialize
 
-  def this() = this("localhost", 6379)
-  override def toString = host + ":" + String.valueOf(port)
+  def this() = this("localhost", Some(6379))
+  override def toString = {
+    port match {
+      case Some(portValue: Int) => host + ":" + String.valueOf(portValue)
+      case None => "unix://" ++ host
+    } 
+  }
 
   def pipeline(f: PipelineClient => Any): Option[List[Any]] = {
     send("MULTI")(asString) // flush reply stream

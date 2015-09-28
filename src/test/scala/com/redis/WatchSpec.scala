@@ -14,7 +14,7 @@ class WatchSpec extends FunSpec
                      with BeforeAndAfterEach
                      with BeforeAndAfterAll {
 
-  implicit val clients = new RedisClientPool("localhost", 6379)
+  implicit val clients = new RedisClientPool("localhost", Some(6379))
 
   override def beforeEach = {
   }
@@ -30,7 +30,7 @@ class WatchSpec extends FunSpec
 
   describe("watch") {
     it("should fail a transaction if modified from another client") {
-      implicit val clients = new RedisClientPool("localhost", 6379)
+      implicit val clients = new RedisClientPool("localhost", Some(6379))
       class P1 extends Runnable {
         def run() {
           clients.withClient { client =>

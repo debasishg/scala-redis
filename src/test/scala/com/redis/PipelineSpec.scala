@@ -12,7 +12,7 @@ class PipelineSpec extends FunSpec
                    with BeforeAndAfterAll
                    with Inside {
 
-  val r = new RedisClient("localhost", 6379)
+  val r = new RedisClient("localhost", Some(6379))
 
   override def beforeEach = {
   }

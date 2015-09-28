@@ -7,7 +7,7 @@ abstract class RedisShards(val hosts: List[ClusterNode]) extends RedisCommand {
 
   // not needed at cluster level
   override val host = null
-  override val port = 0
+  override val port = Some(0)
   override val timeout = 0
 
   // abstract val

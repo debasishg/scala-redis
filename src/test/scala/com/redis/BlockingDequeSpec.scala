@@ -17,8 +17,8 @@ class BlockingDequeSpec extends FunSpec
   describe("blocking poll") {
     it("should pull out first element") {
 
-      val r1 = new RedisDequeClient("localhost", 6379).getDeque("btd", blocking = true, timeoutInSecs = 30)
-      val r2 = new RedisDequeClient("localhost", 6379).getDeque("btd", blocking = true, timeoutInSecs = 30)
+      val r1 = new RedisDequeClient("localhost", Some(6379)).getDeque("btd", blocking = true, timeoutInSecs = 30)
+      val r2 = new RedisDequeClient("localhost", Some(6379)).getDeque("btd", blocking = true, timeoutInSecs = 30)
 
       class Foo extends Runnable {
         def start () {
@@ -43,8 +43,8 @@ class BlockingDequeSpec extends FunSpec
   describe("blocking poll with pollLast") {
     it("should pull out first element") {
 
-      val r1 = new RedisDequeClient("localhost", 6379).getDeque("btd", blocking = true, timeoutInSecs = 30)
-      val r2 = new RedisDequeClient("localhost", 6379).getDeque("btd", blocking = true, timeoutInSecs = 30)
+      val r1 = new RedisDequeClient("localhost", Some(6379)).getDeque("btd", blocking = true, timeoutInSecs = 30)
+      val r2 = new RedisDequeClient("localhost", Some(6379)).getDeque("btd", blocking = true, timeoutInSecs = 30)
 
       class Foo extends Runnable {
         def start () {

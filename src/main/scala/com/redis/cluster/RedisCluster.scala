@@ -53,7 +53,7 @@ object NoOpKeyTag extends KeyTag {
  * a level of abstraction for each node decoupling it from the address. A node is now identified
  * by a name, so functions like <tt>replaceServer</tt> works seamlessly.
  */
-case class ClusterNode(nodename: String, host: String, port: Int, database: Int = 0, maxIdle: Int = 8, secret: Option[Any] = None, timeout : Int = 0){
+case class ClusterNode(nodename: String, host: String, port: Option[Int], database: Int = 0, maxIdle: Int = 8, secret: Option[Any] = None, timeout : Int = 0){
   override def toString = nodename
 }
 
@@ -61,7 +61,7 @@ abstract class RedisCluster(hosts: ClusterNode*) extends RedisCommand {
 
   // not needed at cluster level
   override val host = null
-  override val port = 0
+  override val port = Some(0)
   override val timeout = 0
 
   // abstract val

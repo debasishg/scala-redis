@@ -25,6 +25,7 @@ object ScalaRedisProject extends Build
       "org.slf4j"         %  "slf4j-log4j12"           % "1.7.2"      % "provided",
       "log4j"             %  "log4j"                   % "1.2.16"     % "provided",
       "com.typesafe.akka" %% "akka-actor"              % "2.3.6",
+      "com.kohlschutter.junixsocket" % "junixsocket-native-common" % "2.0.4",
       "junit"             %  "junit"                   % "4.8.1"      % "test",
       "org.scalatest"     %%  "scalatest"              % "2.1.3" % "test"),
 
