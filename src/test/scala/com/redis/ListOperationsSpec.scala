@@ -14,7 +14,7 @@ class ListOperationsSpec extends FunSpec
                          with BeforeAndAfterEach
                          with BeforeAndAfterAll {
 
-  val r = new RedisClient("localhost", 6379)
+  val r = new RedisClient("localhost", Some(6379))
 
   override def beforeEach = {
   }
@@ -352,7 +352,7 @@ class ListOperationsSpec extends FunSpec
     }
 
     it("should pop blockingly") {
-      val r1 = new RedisClient("localhost", 6379)
+      val r1 = new RedisClient("localhost", Some(6379))
       class Foo extends Runnable {
         def start () {
           val myThread = new Thread(this) ;
@@ -381,7 +381,7 @@ class ListOperationsSpec extends FunSpec
 
   describe("blpop") {
     it ("should pop in a blocking mode") {
-      val r1 = new RedisClient("localhost", 6379)
+      val r1 = new RedisClient("localhost", Some(6379))
       class Foo extends Runnable {
         def start () {
           val myThread = new Thread(this) ;

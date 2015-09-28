@@ -14,7 +14,7 @@ class DequeSpec extends FunSpec
                 with BeforeAndAfterEach
                 with BeforeAndAfterAll {
 
-  val r = new RedisDequeClient("localhost", 6379).getDeque("td")
+  val r = new RedisDequeClient("localhost", Some(6379)).getDeque("td")
 
   override def beforeEach = {
     r.clear

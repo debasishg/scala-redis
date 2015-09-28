@@ -52,7 +52,7 @@ Let us connect and get a key:
     scala> import com.redis._
     import com.redis._
 
-    scala> val r = new RedisClient("localhost", 6379)
+    scala> val r = new RedisClient("localhost", Some(6379))
     r: com.redis.RedisClient = localhost:6379
 
     scala> r.set("key", "some value")
@@ -114,7 +114,7 @@ scala-redis is a blocking client, which serves the purpose in most of the cases 
 scala-redis includes a Pool implementation which can be used to serve this purpose. Based on Apache Commons Pool implementation, RedisClientPool maintains a pool of instances of RedisClient, which can grow based on demand. Here's a sample usage ..
 
 ```scala
-val clients = new RedisClientPool("localhost", 6379)
+val clients = new RedisClientPool("localhost", Some(6379))
 def lp(msgs: List[String]) = {
   clients.withClient {
     client => {

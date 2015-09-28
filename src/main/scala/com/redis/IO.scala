@@ -8,7 +8,7 @@ import com.redis.serialization.Parse.parseStringSafe
 
 trait IO extends Log {
   val host: String
-  val port: Int
+  val port: Option[Int]
   val timeout: Int
 
   var socket: Socket = _
@@ -18,20 +18,23 @@ trait IO extends Log {
 
   def connected = {
     // there's a good chance i am missing something here:
-    val isBound = if(socket.isInstanceOf[AFUNIXSocket]) { true } else { socket.isBound() }
+    val isBound = socket != null && (if(socket.isInstanceOf[AFUNIXSocket]) { true } else { socket.isBound() })
     
-    socket != null && isBound && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown()
+    isBound && !socket.isClosed() && socket.isConnected() && !socket.isInputShutdown() && !socket.isOutputShutdown()
   }
 
   // Connects the socket, and sets the input and output streams.
   def connect: Boolean = {
     try {
-      if(port == -1) {    // unix socket
-        val socketFile = new File(host)
-        socket = AFUNIXSocket.newInstance()
-        socket.connect(new AFUNIXSocketAddress(socketFile))
-      }else {
-        socket = new Socket(host, port)
+      port match {
+        case Some(portValue) => {
+          socket = new Socket(host, portValue)
+        }
+        case None => {    // unix domain socket
+          val socketFile = new File(host)
+          socket = AFUNIXSocket.newInstance()
+          socket.connect(new AFUNIXSocketAddress(socketFile))
+        }
       }
 
       socket.setSoTimeout(timeout)

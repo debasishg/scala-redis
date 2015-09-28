@@ -10,7 +10,7 @@ case object GoDown
 class Pub extends Actor {
   println("starting publishing service ..")
   val system = ActorSystem("pub")
-  val r = new RedisClient("localhost", 6379)
+  val r = new RedisClient("localhost", Some(6379))
   val p = system.actorOf(Props(new Publisher(r)))
 
   def receive = {
@@ -32,7 +32,7 @@ class Pub extends Actor {
 class Sub extends Actor {
   println("starting subscription service ..")
   val system = ActorSystem("sub")
-  val r = new RedisClient("localhost", 6379)
+  val r = new RedisClient("localhost", Some(6379))
   val s = system.actorOf(Props(new Subscriber(r)))
   s ! Register(callback) 
 

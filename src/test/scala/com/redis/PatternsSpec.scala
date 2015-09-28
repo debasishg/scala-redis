@@ -15,7 +15,7 @@ class PatternsSpec extends FunSpec
                with BeforeAndAfterEach
                with BeforeAndAfterAll {
 
-  implicit val clients = new RedisClientPool("localhost", 6379)
+  implicit val clients = new RedisClientPool("localhost", Some(6379))
 
   override def beforeEach = {
   }

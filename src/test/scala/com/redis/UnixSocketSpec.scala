@@ -16,7 +16,7 @@ class UnixSocketSpec extends FunSpec
                          with BeforeAndAfterEach
                          with BeforeAndAfterAll {
 
-  val r = new RedisClient("/tmp/redis.sock", -1)
+  val r = new RedisClient("/tmp/redis.sock", None)
 
   override def beforeEach = {
   }

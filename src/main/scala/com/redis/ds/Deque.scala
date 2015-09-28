@@ -75,7 +75,7 @@ abstract class RedisDeque[A](val blocking: Boolean = false, val timeoutInSecs: I
 
 import com.redis.RedisCommand
 
-class RedisDequeClient(val h: String, val p: Int, val d: Int = 0, val s: Option[Any] = None, val t : Int =0) {
+class RedisDequeClient(val h: String, val p: Option[Int], val d: Int = 0, val s: Option[Any] = None, val t : Int =0) {
   def getDeque[A](k: String, blocking: Boolean = false, timeoutInSecs: Int = 0)(implicit format: Format, parse: Parse[A]) =
     new RedisDeque(blocking, timeoutInSecs)(format, parse) with RedisCommand {
       val host = h

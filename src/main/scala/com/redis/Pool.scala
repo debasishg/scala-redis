@@ -4,7 +4,7 @@ import org.apache.commons.pool._
 import org.apache.commons.pool.impl._
 import com.redis.cluster.ClusterNode
 
-private [redis] class RedisClientFactory(val host: String, val port: Int, val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0)
+private [redis] class RedisClientFactory(val host: String, val port: Option[Int], val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0)
   extends PoolableObjectFactory[RedisClient] {
 
   // when we make an object it's already connected
@@ -26,9 +26,14 @@ private [redis] class RedisClientFactory(val host: String, val port: Int, val da
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(val host: String, val port: Int, val maxIdle: Int = 8, val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0) {
+class RedisClientPool(val host: String, val port: Option[Int], val maxIdle: Int = 8, val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0) {
   val pool = new StackObjectPool(new RedisClientFactory(host, port, database, secret, timeout), maxIdle)
-  override def toString = host + ":" + String.valueOf(port)
+  override def toString = {
+    port match {
+      case Some(portValue) => host + ":" + String.valueOf(portValue)
+      case None => "unix://" ++ host
+    }
+  }
 
   def withClient[T](body: RedisClient => T) = {
     val client = pool.borrowObject

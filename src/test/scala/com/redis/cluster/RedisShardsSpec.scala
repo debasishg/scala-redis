@@ -17,7 +17,7 @@ class RedisShardsSpec extends FunSpec
                        with BeforeAndAfterEach
                        with BeforeAndAfterAll {
 
-  val nodes = List(ClusterNode("node1", "localhost", 6379), ClusterNode("node2", "localhost", 6380), ClusterNode("node3", "localhost", 6381))
+  val nodes = List(ClusterNode("node1", "localhost", Some(6379)), ClusterNode("node2", "localhost", Some(6380)), ClusterNode("node3", "localhost", Some(6381)))
   val r = new RedisShards(nodes) {
     val keyTag = Some(RegexKeyTag)
   }
@@ -114,11 +114,11 @@ class RedisShardsSpec extends FunSpec
 
       //simulate the same value is duplicated to slave
       //for test, don't set to master, just to make sure the expected value is loaded from slave
-      val redisClient = new RedisClient("localhost", 6382)
+      val redisClient = new RedisClient("localhost", Some(6382))
       redisClient.set("testkey1", "testvalue1")
 
       //replaced master with slave on the same node
-      r.replaceServer(ClusterNode(nodename, "localhost", 6382))
+      r.replaceServer(ClusterNode(nodename, "localhost", Some(6382)))
       r.get("testkey1") should equal (Some("testvalue1"))
 
       //switch back to master. the old value is loaded
