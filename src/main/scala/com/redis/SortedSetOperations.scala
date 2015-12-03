@@ -140,4 +140,22 @@ trait SortedSetOperations { self: Redis =>
   def zscan[A](key: Any, cursor: Int, pattern: Any = "*", count: Int = 10)(implicit format: Format, parse: Parse[A]): Option[(Option[Int], Option[List[Option[A]]])] =
     send("ZSCAN", key :: cursor :: ((x: List[Any]) => if(pattern == "*") x else "match" :: pattern :: x)(if(count == 10) Nil else List("count", count)))(asPair)
 
+  // ZRANGEBYLEX
+  def zrangebylex[A](key: Any,
+                     min: String = "-",
+                     minInclusive: Boolean = true,
+                     max: String = "+",
+                     maxInclusive: Boolean = true,
+                     limit: Option[(Int, Int)] = None)
+                    (implicit format: Format, parse: Parse[A]): Option[List[A]] = {
+    val minParam: String = Format.formatString(min, minInclusive)
+    val maxParam: String = Format.formatString(max, maxInclusive)
+    val limitEntries =
+      if (!limit.isEmpty) {
+        "LIMIT" :: limit.toList.flatMap(l => List(l._1, l._2))
+      } else {
+        List()
+      }
+    send("ZRANGEBYLEX", List(key, minParam, maxParam) ::: limitEntries)(asList.map(_.flatten))
+  }
 }

@@ -35,6 +35,11 @@ class SortedSetOperationsSpec extends FunSpec
     zadd("hackers", 1953, "richard stallman", (1916, "claude shannon"), (1969, "linus torvalds"), (1940, "alan kay"), (1912, "alan turing")) should equal(Some(5))
   }
 
+  private def addWithoutScore = {
+    zadd("autocomplete", 0d, "one") should equal(Some(1))
+    zadd("autocomplete", 0d, "two", (0d, "three"), (0d, "four"), (0d, "five"), (0d, "six"))
+  }
+
   describe("zadd") {
     it("should add based on proper sorted set semantics") {
       add
@@ -195,6 +200,31 @@ class SortedSetOperationsSpec extends FunSpec
 
       zrangebyscoreWithScore("hackers", 1940, true, 1969, true, Some(3, 1), DESC).get should equal (
         List(("alan kay", 1940.0)))
+    }
+  }
+  describe("zrangebylex") {
+    it("should return the elements between - and +") {
+      addWithoutScore
+
+      zrangebylex("autocomplete").get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+
+      zrangebylex("autocomplete", "-", true, "+", true).get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+
+      zrangebylex("autocomplete", "-", false, "+", false).get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+    }
+
+    it("should return the elements between the two strings and allow offset and limit") {
+      addWithoutScore
+
+      zrangebylex("autocomplete", "f", true, "fz", true, Some(0, 2)).get should equal(
+        List("five", "four"))
+
+      zrangebylex("autocomplete", "f", true, "fz", true, Some(1, 1)).get should equal(
+        List("four"))
+
     }
   }
 }
