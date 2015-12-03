@@ -46,12 +46,12 @@ class SortedSetOperationsSpec extends FunSpec
       zadd("hackers", 1912, "alan turing") should equal(Some(0))
       zcard("hackers").get should equal(6)
     }
-//    it("should honour the increment parameter") {
-//      add
-//      zadd(key = "hackers", onlyUpdate = false, onlyAdd = false, changed = true, increment = true, 1000d, "yukihiro matsumoto") should equal(Some(1))
-//      zcard("hackers").get should equal(6)
-//      zscore("hackers", "yukihiro matsumoto").get should equal(2965)
-//    }
+    it("should honour the increment parameter") {
+      add
+      zadd(key = "hackers", onlyUpdate = false, onlyAdd = false, changed = true, increment = true, 1000d, "yukihiro matsumoto") should equal(Some(1))
+      zcard("hackers").get should equal(6)
+      zscore("hackers", "yukihiro matsumoto").get should equal(2965)
+    }
   }
 
   describe("zrem") {
