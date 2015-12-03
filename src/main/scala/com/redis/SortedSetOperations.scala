@@ -158,7 +158,7 @@ trait SortedSetOperations { self: Redis =>
   def zscan[A](key: Any, cursor: Int, pattern: Any = "*", count: Int = 10)(implicit format: Format, parse: Parse[A]): Option[(Option[Int], Option[List[Option[A]]])] =
     send("ZSCAN", key :: cursor :: ((x: List[Any]) => if(pattern == "*") x else "match" :: pattern :: x)(if(count == 10) Nil else List("count", count)))(asPair)
 
-  // ZSCANBYLEX
+  // ZRANGEBYLEX
   def zrangebylex[A](key: Any,
                      min: String = "-",
                      minInclusive: Boolean = true,
@@ -166,8 +166,9 @@ trait SortedSetOperations { self: Redis =>
                      maxInclusive: Boolean = true,
                      limit: Option[(Int, Int)] = None)
                     (implicit format: Format, parse: Parse[A]): Option[List[A]] = {
-    val minParam:String = Format.formatString(min, minInclusive)
-    val maxParam:String = Format.formatString(max, maxInclusive)
+
+    val minParam: String = Format.formatString(min, minInclusive)
+    val maxParam: String = Format.formatString(max, maxInclusive)
     val limitEntries =
       if (!limit.isEmpty) {
         "LIMIT" :: limit.toList.flatMap(l => List(l._1, l._2))
@@ -176,26 +177,4 @@ trait SortedSetOperations { self: Redis =>
       }
     send("ZRANGEBYLEX", List(key, minParam, maxParam) ::: limitEntries)(asList.map(_.flatten))
   }
-
-
-  /*
-  def zrangebyscore[A](key: Any,
-                       min: Double = Double.NegativeInfinity,
-                       minInclusive: Boolean = true,
-                       max: Double = Double.PositiveInfinity,
-                       maxInclusive: Boolean = true,
-                       limit: Option[(Int, Int)],
-                       sortAs: SortOrder = ASC)(implicit format: Format, parse: Parse[A]): Option[List[A]] = {
-
-    val (limitEntries, minParam, maxParam) =
-      zrangebyScoreWithScoreInternal(min, minInclusive, max, maxInclusive, limit)
-
-    val params = sortAs match {
-      case ASC => ("ZRANGEBYSCORE", key :: minParam :: maxParam :: limitEntries)
-      case DESC => ("ZREVRANGEBYSCORE", key :: maxParam :: minParam :: limitEntries)
-    }
-    send(params._1, params._2)(asList.map(_.flatten))
-  }
-  */
-
 }

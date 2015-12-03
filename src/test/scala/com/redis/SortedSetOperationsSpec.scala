@@ -40,6 +40,11 @@ class SortedSetOperationsSpec extends FunSpec
     zadd("autocomplete", 0d, "two", (0d, "three"), (0d, "four"), (0d, "five"), (0d, "six"))
   }
 
+  private def addWithoutScore = {
+    zadd("autocomplete", 0d, "one") should equal(Some(1))
+    zadd("autocomplete", 0d, "two", (0d, "three"), (0d, "four"), (0d, "five"), (0d, "six"))
+  }
+
   describe("zadd") {
     it("should add based on proper sorted set semantics") {
       add

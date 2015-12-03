@@ -26,8 +26,17 @@ private [redis] class RedisClientFactory(val host: String, val port: Int, val da
   def activateObject(rc: RedisClient): Unit = {}
 }
 
-class RedisClientPool(val host: String, val port: Int, val maxIdle: Int = 8, val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0) {
-  val pool = new StackObjectPool(new RedisClientFactory(host, port, database, secret, timeout), maxIdle)
+object RedisClientPool {
+  val UNLIMITED_CONNECTIONS = -1
+
+  val WHEN_EXHAUSTED_BLOCK = GenericObjectPool.WHEN_EXHAUSTED_BLOCK
+  val WHEN_EXHAUSTED_FAIL = GenericObjectPool.WHEN_EXHAUSTED_FAIL
+  val WHEN_EXHAUSTED_GROW = GenericObjectPool.WHEN_EXHAUSTED_GROW
+}
+
+class RedisClientPool(val host: String, val port: Int, val maxIdle: Int = 8, val database: Int = 0, val secret: Option[Any] = None, val timeout : Int = 0, 
+    val maxConnections: Int = RedisClientPool.UNLIMITED_CONNECTIONS, val whenExhaustedBehavior: Byte = RedisClientPool.WHEN_EXHAUSTED_BLOCK, val poolWaitTimeout: Long = 3000) {
+  val pool = new GenericObjectPool(new RedisClientFactory(host, port, database, secret, timeout), maxConnections, whenExhaustedBehavior, poolWaitTimeout, maxIdle, false, true)
   override def toString = host + ":" + String.valueOf(port)
 
   def withClient[T](body: RedisClient => T) = {
