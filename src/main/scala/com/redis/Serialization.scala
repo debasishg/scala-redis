@@ -5,6 +5,12 @@ object Format {
 
   implicit val default: Format = new Format(Map.empty)
 
+  def formatString(s: String, inclusive: Boolean = true):String = s match {
+    case "+" => s
+    case "-" => s
+    case _ => (if (inclusive) ("[") else ("(")) + s
+  }
+
   def formatDouble(d: Double, inclusive: Boolean = true) =
     (if (inclusive) ("") else ("(")) + {
       if (d.isInfinity) {
@@ -14,6 +20,11 @@ object Format {
       }
     }
 
+  def formatString(s: String, inclusive: Boolean = true): String = s match {
+    case "+" => s
+    case "-" => s
+    case _ => (if (inclusive) ("[") else ("(")) + s
+  }
 }
 
 class Format(val format: PartialFunction[Any, Any]) {

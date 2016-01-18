@@ -31,8 +31,18 @@ class SortedSetOperationsSpec extends FunSpec
   import r._
 
   private def add = {
-    zadd("hackers", 1965, "yukihiro matsumoto") should equal(Some(1))
-    zadd("hackers", 1953, "richard stallman", (1916, "claude shannon"), (1969, "linus torvalds"), (1940, "alan kay"), (1912, "alan turing")) should equal(Some(5))
+    zadd("hackers", 1965d, "yukihiro matsumoto") should equal(Some(1))
+    zadd("hackers", 1953d, "richard stallman", (1916d, "claude shannon"), (1969d, "linus torvalds"), (1940d, "alan kay"), (1912d, "alan turing")) should equal(Some(5))
+  }
+
+  private def addWithoutScore = {
+    zadd("autocomplete", 0d, "one") should equal(Some(1))
+    zadd("autocomplete", 0d, "two", (0d, "three"), (0d, "four"), (0d, "five"), (0d, "six"))
+  }
+
+  private def addWithoutScore = {
+    zadd("autocomplete", 0d, "one") should equal(Some(1))
+    zadd("autocomplete", 0d, "two", (0d, "three"), (0d, "four"), (0d, "five"), (0d, "six"))
   }
 
   describe("zadd") {
@@ -40,6 +50,12 @@ class SortedSetOperationsSpec extends FunSpec
       add
       zadd("hackers", 1912, "alan turing") should equal(Some(0))
       zcard("hackers").get should equal(6)
+    }
+    it("should honour the increment parameter") {
+      add
+      zadd(key = "hackers", onlyUpdate = false, onlyAdd = false, changed = true, increment = true, 1000d, "yukihiro matsumoto") should equal(Some(1))
+      zcard("hackers").get should equal(6)
+      zscore("hackers", "yukihiro matsumoto").get should equal(2965)
     }
   }
 
@@ -195,6 +211,32 @@ class SortedSetOperationsSpec extends FunSpec
 
       zrangebyscoreWithScore("hackers", 1940, true, 1969, true, Some(3, 1), DESC).get should equal (
         List(("alan kay", 1940.0)))
+    }
+  }
+
+  describe("zrangebylex") {
+    it("should return the elements between - and +") {
+      addWithoutScore
+
+      zrangebylex("autocomplete").get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+
+      zrangebylex("autocomplete", "-", true, "+", true).get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+
+      zrangebylex("autocomplete", "-", false, "+", false).get should equal(
+        List("five", "four", "one", "six", "three", "two"))
+    }
+
+    it("should return the elements between the two strings and allow offset and limit") {
+      addWithoutScore
+
+      zrangebylex("autocomplete", "f", true, "fz", true, Some(0, 2)).get should equal(
+        List("five", "four"))
+
+      zrangebylex("autocomplete", "f", true, "fz", true, Some(1, 1)).get should equal(
+        List("four"))
+
     }
   }
 }

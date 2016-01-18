@@ -2,43 +2,44 @@ package com.redis
 
 import serialization._
 
-trait Operations { self: Redis =>
+trait Operations {
+  self: Redis =>
   // SORT
   // sort keys in a set, and optionally pull values for them
-  def sort[A](key:String,
-              limit:Option[(Int, Int)] = None,
-              desc:Boolean = false,
-              alpha:Boolean = false,
-              by:Option[String] = None,
-              get:List[String] = Nil)(implicit format:Format, parse:Parse[A]):Option[List[Option[A]]] = {
+  def sort[A](key: String,
+              limit: Option[(Int, Int)] = None,
+              desc: Boolean = false,
+              alpha: Boolean = false,
+              by: Option[String] = None,
+              get: List[String] = Nil)(implicit format: Format, parse: Parse[A]): Option[List[Option[A]]] = {
 
-    val commands:List[Any] = makeSortArgs(key, limit, desc, alpha, by, get)
+    val commands: List[Any] = makeSortArgs(key, limit, desc, alpha, by, get)
     send("SORT", commands)(asList)
   }
 
-  private def makeSortArgs(key:String,
-              limit:Option[(Int, Int)] = None,
-              desc:Boolean = false,
-              alpha:Boolean = false,
-              by:Option[String] = None,
-              get:List[String] = Nil): List[Any] = {
+  private def makeSortArgs(key: String,
+                           limit: Option[(Int, Int)] = None,
+                           desc: Boolean = false,
+                           alpha: Boolean = false,
+                           by: Option[String] = None,
+                           get: List[String] = Nil): List[Any] = {
     List(List(key), limit.map(l => List("LIMIT", l._1, l._2)).getOrElse(Nil)
       , (if (desc) List("DESC") else Nil)
       , (if (alpha) List("ALPHA") else Nil)
       , by.map(b => List("BY", b)).getOrElse(Nil)
-      , get.map(g => List("GET", g)).flatMap(x=>x)
-      ).flatMap(x=>x)
+      , get.map(g => List("GET", g)).flatMap(x => x)
+    ).flatMap(x => x)
   }
 
   // SORT with STORE
   // sort keys in a set, and store result in the supplied key
-  def sortNStore[A](key:String, 
-              limit:Option[(Int, Int)] = None,
-              desc:Boolean = false, 
-              alpha:Boolean = false, 
-              by:Option[String] = None, 
-              get:List[String] = Nil,
-              storeAt: String)(implicit format:Format, parse:Parse[A]):Option[Long] = {
+  def sortNStore[A](key: String,
+                    limit: Option[(Int, Int)] = None,
+                    desc: Boolean = false,
+                    alpha: Boolean = false,
+                    by: Option[String] = None,
+                    get: List[String] = Nil,
+                    storeAt: String)(implicit format: Format, parse: Parse[A]): Option[Long] = {
 
     val commands = makeSortArgs(key, limit, desc, alpha, by, get) ::: List("STORE", storeAt)
     send("SORT", commands)(asLong)
@@ -63,12 +64,12 @@ trait Operations { self: Redis =>
   // atomically renames the key oldkey to newkey.
   def rename(oldkey: Any, newkey: Any)(implicit format: Format): Boolean =
     send("RENAME", List(oldkey, newkey))(asBoolean)
-  
+
   // RENAMENX (oldkey, newkey)
   // rename oldkey into newkey but fails if the destination key newkey already exists.
   def renamenx(oldkey: Any, newkey: Any)(implicit format: Format): Boolean =
     send("RENAMENX", List(oldkey, newkey))(asBoolean)
-  
+
   // DBSIZE
   // return the size of the db.
   def dbsize: Option[Long] =
@@ -129,8 +130,8 @@ trait Operations { self: Redis =>
       }
       case _ => false
     })
-    
-  
+
+
   // FLUSHDB the DB
   // removes all the DB data.
   def flushdb: Boolean =
@@ -145,12 +146,12 @@ trait Operations { self: Redis =>
   // Move the specified key from the currently selected DB to the specified destination DB.
   def move(key: Any, db: Int)(implicit format: Format): Boolean =
     send("MOVE", List(key, db))(asBoolean)
-  
+
   // QUIT
   // exits the server.
   def quit: Boolean =
     send("QUIT")(disconnect)
-  
+
   // AUTH
   // auths with the server.
   def auth(secret: Any)(implicit format: Format): Boolean =
@@ -165,7 +166,7 @@ trait Operations { self: Redis =>
   // SCAN
   // Incrementally iterate the keys space (since 2.8)
   def scan[A](cursor: Int, pattern: Any = "*", count: Int = 10)(implicit format: Format, parse: Parse[A]): Option[(Option[Int], Option[List[Option[A]]])] =
-    send("SCAN", cursor :: ((x: List[Any]) => if(pattern == "*") x else "match" :: pattern :: x)(if(count == 10) Nil else List("count", count)))(asPair)
+    send("SCAN", cursor :: ((x: List[Any]) => if (pattern == "*") x else "match" :: pattern :: x)(if (count == 10) Nil else List("count", count)))(asPair)
 
   // PING
   def ping: Option[String] = send("PING")(asString)

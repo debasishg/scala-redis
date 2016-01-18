@@ -8,7 +8,25 @@ trait SortedSetOperations { self: Redis =>
   // Add the specified members having the specified score to the sorted set stored at key.
   def zadd(key: Any, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Long] =
     send("ZADD", List(key, score, member) ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asLong)
-  
+
+  // ZADD (Variadic: >= 2.4)
+  // options >= 3.0.2 ZADD key [NX|XX] [CH] [INCR]
+  // Add the specified members having the specified score to the sorted set stored at key.
+  def zadd(key: Any, onlyUpdate:Boolean, onlyAdd:Boolean, changed:Boolean, increment:Boolean, score: Double, member: Any, scoreVals: (Double, Any)*)(implicit format: Format): Option[Int] = {
+
+    val commands: List[Any] = {
+      List(List(key)
+        , if (onlyUpdate) List("XX") else Nil
+        , if (onlyAdd) List("NX") else Nil
+        , if (changed) List("CH") else Nil
+        , if (increment) List("INCR") else Nil
+        , List(score)
+        , List(member)
+      ).flatten
+    }
+    send("ZADD", commands ::: scoreVals.toList.map(x => List(x._1, x._2)).flatten)(asInt)
+  }
+
   // ZREM (Variadic: >= 2.4)
   // Remove the specified members from the sorted set value stored at key.
   def zrem(key: Any, member: Any, members: Any*)(implicit format: Format): Option[Long] =
@@ -140,4 +158,23 @@ trait SortedSetOperations { self: Redis =>
   def zscan[A](key: Any, cursor: Int, pattern: Any = "*", count: Int = 10)(implicit format: Format, parse: Parse[A]): Option[(Option[Int], Option[List[Option[A]]])] =
     send("ZSCAN", key :: cursor :: ((x: List[Any]) => if(pattern == "*") x else "match" :: pattern :: x)(if(count == 10) Nil else List("count", count)))(asPair)
 
+  // ZRANGEBYLEX
+  def zrangebylex[A](key: Any,
+                     min: String = "-",
+                     minInclusive: Boolean = true,
+                     max: String = "+",
+                     maxInclusive: Boolean = true,
+                     limit: Option[(Int, Int)] = None)
+                    (implicit format: Format, parse: Parse[A]): Option[List[A]] = {
+
+    val minParam: String = Format.formatString(min, minInclusive)
+    val maxParam: String = Format.formatString(max, maxInclusive)
+    val limitEntries =
+      if (!limit.isEmpty) {
+        "LIMIT" :: limit.toList.flatMap(l => List(l._1, l._2))
+      } else {
+        List()
+      }
+    send("ZRANGEBYLEX", List(key, minParam, maxParam) ::: limitEntries)(asList.map(_.flatten))
+  }
 }

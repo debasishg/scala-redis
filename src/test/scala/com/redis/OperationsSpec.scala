@@ -111,17 +111,14 @@ class OperationsSpec extends FunSpec
       r.getType("anshin-2").get should equal("string")
     }
   }
-
   describe("expire") {
     it("should give") {
       r.set("anshin-1", "debasish")
       r.set("anshin-2", "maulindu")
       r.expire("anshin-2", 1000) should equal(true)
-      r.ttl("anshin-2") should equal(Some(1000))
       r.expire("anshin-3", 1000) should equal(false)
     }
   }
-
   describe("persist") {
     it("should give") {
       r.set("key-2", "maulindu")
