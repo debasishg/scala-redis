@@ -1,5 +1,9 @@
 # Redis Scala client
 
+Note: This forked version is compatible with SBT 0.11.3.
+ 
+Original version is maintained by Debasish Gosh on https://github.com/debasishg
+
 ## Key features of the library
 
 - Native Scala types Set and List responses.
