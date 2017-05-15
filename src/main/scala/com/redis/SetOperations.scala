@@ -44,8 +44,8 @@ trait SetOperations { self: Redis =>
   // and store the resulting Set at dstkey.
   // SINTERSTORE returns the size of the intersection, unlike what the documentation says
   // refer http://code.google.com/p/redis/issues/detail?id=121
-  def sinterstore(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
-    send("SINTERSTORE", key :: keys.toList)(asLong)
+  def sinterstore(dstkey: Any, key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("SINTERSTORE", dstkey :: key :: keys.toList)(asLong)
 
   // SUNION
   // Return the union between the Sets stored at key1, key2, ..., keyN.
@@ -57,8 +57,8 @@ trait SetOperations { self: Redis =>
   // and store the resulting Set at dstkey.
   // SUNIONSTORE returns the size of the union, unlike what the documentation says
   // refer http://code.google.com/p/redis/issues/detail?id=121
-  def sunionstore(key: Any, keys: Any*)(implicit format: Format): Option[Long] =
-    send("SUNIONSTORE", key :: keys.toList)(asLong)
+  def sunionstore(dstkey: Any, key: Any, keys: Any*)(implicit format: Format): Option[Long] =
+    send("SUNIONSTORE", dstkey :: key :: keys.toList)(asLong)
 
   // SDIFF
   // Return the difference between the Set stored at key1 and all the Sets key2, ..., keyN.
