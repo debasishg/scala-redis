@@ -25,8 +25,8 @@ lazy val coreSettings = commonSettings ++ Seq(
   name := "RedisClient",
   libraryDependencies ++= Seq(
     "org.apache.commons"      %  "commons-pool2"           % "2.8.0",
-    "org.slf4j"               %  "slf4j-api"               % "1.7.29",
-    "org.slf4j"               %  "slf4j-log4j12"           % "1.7.29"      % "provided",
+    "org.slf4j"               %  "slf4j-api"               % "1.7.30",
+    "org.slf4j"               %  "slf4j-log4j12"           % "1.7.30"      % "provided",
     "log4j"                   %  "log4j"                   % "1.2.17"      % "provided",
     "org.scalatest"           %% "scalatest"               % "3.1.0"       % "test"
   ) ++
