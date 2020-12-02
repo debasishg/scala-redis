@@ -38,7 +38,7 @@ object Bench {
     val tasks = (1 to 100) map (i => Future { fn(opsPerClient, "k" + i.toString) })
     val results = Await.result(Future.sequence(tasks), 120 seconds)
     val elapsedSeconds = (System.nanoTime - start)/1000000000.0 
-    val opsPerSec = (opsPerClient * 100 * 2) / elapsedSeconds
+    val opsPerSec = (opsPerClient * 100) / elapsedSeconds
     (elapsedSeconds, opsPerSec, results)
   }
 }
